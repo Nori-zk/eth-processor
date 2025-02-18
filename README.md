@@ -1,4 +1,4 @@
-# Mina zkApp: Ethprocessor
+# Mina zkApp: Eth-processor
 
 This template uses TypeScript.
 

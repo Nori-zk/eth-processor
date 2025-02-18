@@ -20,7 +20,8 @@
     "format": "prettier --write --ignore-unknown **/*",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "lint": "npx eslint src/* --fix"
+    "lint": "npx eslint src/* --fix",
+    "eth": "npm run build && node --experimental-vm-modules build/src/EthScript.js"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.4",
@@ -32,6 +33,7 @@
     "eslint-plugin-o1js": "^0.4.0",
     "jest": "^29.7.0",
     "prettier": "^2.3.2",
+    "proof-conversion": "./proof-conversion.tgz",
     "ts-jest": "^29.2.4",
     "typescript": "^5.4.5"
   },
@@ -40,5 +42,8 @@
   },
   "engines": {
     "node": ">=18.14.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
   }
 }
