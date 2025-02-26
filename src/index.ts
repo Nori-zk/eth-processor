@@ -1,3 +1,3 @@
-import { EthProcessor } from './EthProcessor.js';
-import { EthProof, Bytes32 } from './EthVerifier.js';
-export { EthProcessor };
+import { EthVerifierComputeOutput } from './interfaces.js';
+import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
+export { EthVerifierComputeOutput, MinaEthProcessorSubmitter as MinaEthProcessorSubmittor };
