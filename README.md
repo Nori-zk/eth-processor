@@ -1,7 +1,5 @@
 # Mina zkApp: Eth-processor
 
-This template uses TypeScript.
-
 ## How to build
 
 ```sh
