@@ -22,4 +22,5 @@
     "useDefineForClassFields": false,
   },
   "include": ["./src", "./src/proofs/*.json"],
+  "exclude": ["**/*.spec.ts"]
 }
