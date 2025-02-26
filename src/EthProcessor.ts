@@ -25,7 +25,7 @@ export const adminPrivateKey = PrivateKey.fromBase58(
 
 export const adminPublicKey = adminPrivateKey.toPublicKey();
 
-class EthProofType extends EthProof {}
+export class EthProofType extends EthProof {}
 
 export class EthProcessor extends SmartContract {
   @state(Field) verifiedStateRoot = State<Field>(); // todo make PackedString

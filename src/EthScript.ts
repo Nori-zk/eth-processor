@@ -64,10 +64,12 @@ async function main() {
     const rawProof = await NodeProofLeft.fromJSON(
       JSON.parse(fs.readFileSync(PATH_TO_O1_PROOF, 'utf8'))
     );
-    const ethSP1Proof = JSON.parse(fs.readFileSync(PATH_TO_SP1_PROOF, 'utf8'));
+    const ethSP1Proof = JSON.parse(fs.readFileSync(PATH_TO_SP1_PROOF, 'utf8')); // JK FIXME why is the proof coming from example file
 
     // Decode proof values
     const defaultEncoder = ethers.AbiCoder.defaultAbiCoder();
+
+    // JK factorise deecoders
     const decoded = defaultEncoder.decode(
       [
         'bytes32',
@@ -76,6 +78,7 @@ async function main() {
         'uint64',
         'bytes32',
         'uint64',
+        'bytes32',
         'bytes32',
       ],
       new Uint8Array(Buffer.from(ethSP1Proof.public_values.buffer.data))
@@ -90,6 +93,7 @@ async function main() {
       prevHeader: Bytes32.fromHex(decoded[4].slice(2)),
       prevHead: UInt64.from(decoded[5]),
       syncCommitteeHash: Bytes32.fromHex(decoded[6].slice(2)),
+      startSyncComitteHash: Bytes32.fromHex(decoded[7].slice(2)),
     });
     // Compute and verify proof
     console.log('Computing proof...');
