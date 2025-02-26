@@ -1,5 +1,5 @@
 {
-  "name": "ethprocessor",
+  "name": "@nori-zk/ethprocessor",
   "version": "0.2.7",
   "description": "zkApp for verifying SP1 Helios Nori proof and storing latest execution state root on Mina",
   "author": "Nori",
@@ -10,6 +10,10 @@
     "mina-dapp",
     "zkapp"
   ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "type": "module",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
