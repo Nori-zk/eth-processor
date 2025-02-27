@@ -1,6 +1,6 @@
 {
-  "name": "ethprocessor",
-  "version": "0.2.7",
+  "name": "@nori-zk/ethprocessor",
+  "version": "0.2.8",
   "description": "zkApp for verifying SP1 Helios Nori proof and storing latest execution state root on Mina",
   "author": "Nori",
   "license": "Apache-2.0",
@@ -16,7 +16,7 @@
   "scripts": {
     "preinstall": "npm run make:build-dir && npm run copy:proof-conversion",
     "prebuild": "npm run make:build-dir && npm run copy:proof-conversion",
-    "copy:proof-conversion": "ncp ./proof-conversion.tgz build",
+    "copy:proof-conversion": "ncp ./proof-conversion.tgz build/proof-conversion.tgz",
     "clean": "rimraf build",
     "make:build-dir": "mkdirp build",
     "build": "npm run clean && npm run make:build-dir && npm run copy:proof-conversion && tsc",
