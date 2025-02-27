@@ -1,3 +1,3 @@
-import { EthVerifierComputeOutput } from './interfaces.js';
+import { EthVerifierComputeOutput, ConvertedProofProofData, ConvertedProofVkData, PlonkProof } from './interfaces.js';
 import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
-export { EthVerifierComputeOutput, MinaEthProcessorSubmitter };
+export { EthVerifierComputeOutput, MinaEthProcessorSubmitter, ConvertedProofProofData, ConvertedProofVkData, PlonkProof };

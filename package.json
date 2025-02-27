@@ -1,6 +1,6 @@
 {
   "name": "@nori-zk/ethprocessor",
-  "version": "0.2.8",
+  "version": "0.2.10",
   "description": "zkApp for verifying SP1 Helios Nori proof and storing latest execution state root on Mina",
   "author": "Nori",
   "license": "Apache-2.0",
@@ -18,12 +18,8 @@
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "scripts": {
-    "preinstall": "npm run make:build-dir && npm run copy:proof-conversion",
-    "prebuild": "npm run make:build-dir && npm run copy:proof-conversion",
-    "copy:proof-conversion": "ncp ./proof-conversion.tgz build/proof-conversion.tgz",
     "clean": "rimraf build",
-    "make:build-dir": "mkdirp build",
-    "build": "npm run clean && npm run make:build-dir && npm run copy:proof-conversion && tsc",
+    "build": "npm run clean && tsc",
     "buildw": "tsc --watch",
     "coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "format": "prettier --write --ignore-unknown **/*",
@@ -55,11 +51,10 @@
     "node": ">=18.14.0"
   },
   "dependencies": {
-    "dotenv": "^16.4.7",
-    "proof-conversion": "./build/proof-conversion.tgz"
+    "@nori-zk/proof-conversion": "^0.1.2",
+    "dotenv": "^16.4.7"
   },
   "files": [
-    "proof-conversion.tgz",
-    "build/**/*"
+    "build"
   ]
 }

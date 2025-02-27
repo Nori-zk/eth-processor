@@ -10,7 +10,7 @@ import {
 import { EthProcessor } from './EthProcessor.js';
 import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
 import fs from 'fs';
-import { NodeProofLeft } from 'proof-conversion';
+import { NodeProofLeft } from '@nori-zk/proof-conversion';
 import { ethers } from 'ethers';
 import { PATH_TO_O1_PROOF, PATH_TO_SP1_PROOF } from './proofs.js';
 

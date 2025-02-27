@@ -1,7 +1,7 @@
 import { EthProcessor, EthProofType } from './EthProcessor.js';
 import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
 import { ethers } from 'ethers';
-import { NodeProofLeft } from 'proof-conversion';
+import { NodeProofLeft } from '@nori-zk/proof-conversion';
 import {
   AccountUpdate,
   Mina,

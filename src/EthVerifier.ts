@@ -14,9 +14,9 @@ import {
 import {
   FrC,
   NodeProofLeft,
-  parsePublicInputsProvable,
+  parsePlonkPublicInputsProvable,
   wordToBytes,
-} from 'proof-conversion';
+} from '@nori-zk/proof-conversion';
 import fs from 'fs';
 
 class Bytes32 extends Bytes(32) {}
@@ -102,7 +102,7 @@ const EthVerifier = ZkProgram({
 
         // Check that zkporgraminput is same as passed to the SP1 program
         const pi0 = ethPlonkVK;
-        const pi1 = parsePublicInputsProvable(Bytes.from(bytes));
+        const pi1 = parsePlonkPublicInputsProvable(Bytes.from(bytes));
 
         const piDigest = Poseidon.hashPacked(Provable.Array(FrC.provable, 2), [
           pi0,
