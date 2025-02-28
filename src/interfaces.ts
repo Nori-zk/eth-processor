@@ -1,3 +1,4 @@
+import { toPendingTransactionPromise } from "o1js/dist/node/lib/mina/transaction";
 import { EthVerifier } from "./EthVerifier";
 
 export interface Proof {
@@ -44,3 +45,5 @@ export interface CreateProofArgument {
 }
 
 export type EthVerifierComputeOutput = Awaited<ReturnType<typeof EthVerifier.compute>>;
+
+export type PendingTransaction = Awaited<ReturnType<typeof toPendingTransactionPromise>>;
