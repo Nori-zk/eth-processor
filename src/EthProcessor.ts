@@ -15,12 +15,13 @@ import {
 import { EthProof, Bytes32 } from './EthVerifier.js';
 import 'dotenv/config';
 
-if (!process.env.ADMIN_PRIVATE_KEY) {
+let ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
+if (!ADMIN_PRIVATE_KEY) {
   console.log('ADMIN_PRIVATE_KEY not set, using random key');
-  process.env.ADMIN_PRIVATE_KEY = PrivateKey.random().toBase58();
+  ADMIN_PRIVATE_KEY = PrivateKey.random().toBase58();
 }
 export const adminPrivateKey = PrivateKey.fromBase58(
-  process.env.ADMIN_PRIVATE_KEY
+  ADMIN_PRIVATE_KEY
 );
 
 export const adminPublicKey = adminPrivateKey.toPublicKey();

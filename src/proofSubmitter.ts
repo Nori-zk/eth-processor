@@ -25,13 +25,19 @@ export class MinaEthProcessorSubmitter {
   liveNet: boolean;
 
   constructor(private type: 'plonk' = 'plonk') {
+    const ZK_APP_ADDRESS = process.env.ZK_APP_ADDRESS;
+    if (ZK_APP_ADDRESS === undefined) {
+      throw "ZK_APP_ADDRESS env var is not defined exiting";
+    }
     this.zkApp = new EthProcessor(
-      PublicKey.fromBase58(process.env.ZK_APP_ADDRESS as string)
+      PublicKey.fromBase58(ZK_APP_ADDRESS)
     );
-    this.senderPrivateKey = PrivateKey.fromBase58(
-      process.env.SENDER_PRIVATE_KEY as string
-    );
-    this.proofsEnabled = process.env.PROOFS_ENABLED === 'true';
+    const SENDER_PRIVATE_KEY = process.env.SENDER_PRIVATE_KEY;
+    if (!SENDER_PRIVATE_KEY) {
+      throw "SENDER_PRIVATE_KEY env var is not define exiting";
+    }
+    this.senderPrivateKey = PrivateKey.fromBase58(SENDER_PRIVATE_KEY);
+    this.proofsEnabled = process.env.PROOFS_ENABLED !== 'false';
     this.liveNet = process.env.LIVE_NET === 'true';
     console.log('Loaded constants from .env');
   }
@@ -77,19 +83,21 @@ export class MinaEthProcessorSubmitter {
 
     // Compute and verify proof.
     console.log('Computing proof.');
-    return await EthVerifier.compute(input, rawProof);
+    return EthVerifier.compute(input, rawProof);
   }
 
   async submit(ethProof: EthProofType) {
     // Update contract state
     console.log('MinaEthProcessorSubmittor: Creating update tx.');
     try {
+
       const updateTx = await Mina.transaction(
         this.senderPrivateKey.toPublicKey(),
         async () => {
           await this.zkApp.update(ethProof);
         }
       );
+
       await updateTx.prove();
       console.log('MinaEthProcessorSubmittor: transaction proven.');
       const tx = await updateTx.sign([this.senderPrivateKey]).send();
