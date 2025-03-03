@@ -1,4 +1,4 @@
-import { PlonkProof } from '../interfaces';
+import { PlonkProof } from '../../interfaces';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const sp1PlonkProof: PlonkProof = require('./sp1Proof.json');

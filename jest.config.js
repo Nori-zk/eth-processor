@@ -15,8 +15,5 @@ export default {
   modulePathIgnorePatterns: ['<rootDir>/build/'],
   moduleNameMapper: {
     '^(\\.{1,2}/.+)\\.js$': '$1',
-  },
-  "setupFilesAfterEnv": [
-    "./jest.log.config.js"
-  ],
+  }
 };

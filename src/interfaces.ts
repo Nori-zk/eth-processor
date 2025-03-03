@@ -1,5 +1,5 @@
-import { toPendingTransactionPromise } from "o1js/dist/node/lib/mina/transaction";
-import { EthVerifier } from "./EthVerifier";
+import { toPendingTransactionPromise } from 'o1js/dist/node/lib/mina/transaction';
+import { EthVerifier } from './EthVerifier';
 
 export interface Proof {
   Plonk: {
