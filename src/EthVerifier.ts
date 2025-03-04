@@ -1,5 +1,4 @@
 import {
-  Field,
   Provable,
   VerificationKey,
   Poseidon,
@@ -9,6 +8,7 @@ import {
   Struct,
   UInt64,
   Undefined,
+  Field,
 } from 'o1js';
 
 import {
@@ -45,7 +45,7 @@ class EthInput extends Struct({
 const EthVerifier = ZkProgram({
   name: 'EthVerifier',
   publicInput: EthInput,
-  publicOutput: Undefined,
+  publicOutput: Field,
   methods: {
     compute: {
       privateInputs: [NodeProofLeft],
@@ -116,7 +116,7 @@ const EthVerifier = ZkProgram({
 
         piDigest.assertEquals(proof.publicOutput.rightOut);
 
-        return undefined;
+        return {publicOutput: new Field(1)};
       },
     },
   },
