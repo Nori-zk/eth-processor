@@ -11,6 +11,7 @@ import {
   NetworkId,
   UInt64,
   VerificationKey,
+  fetchAccount,
 } from 'o1js';
 import { CreateProofArgument } from './interfaces.js';
 
@@ -23,27 +24,44 @@ export class MinaEthProcessorSubmitter {
   // Execution environment flags.
   proofsEnabled: boolean;
   liveNet: boolean;
+  txFee: number;
 
   constructor(private type: 'plonk' = 'plonk') {
     const ZK_APP_ADDRESS = process.env.ZK_APP_ADDRESS;
     if (ZK_APP_ADDRESS === undefined) {
-      throw "ZK_APP_ADDRESS env var is not defined exiting";
+      throw 'ZK_APP_ADDRESS env var is not defined exiting';
     }
-    this.zkApp = new EthProcessor(
-      PublicKey.fromBase58(ZK_APP_ADDRESS)
-    );
+    this.zkApp = new EthProcessor(PublicKey.fromBase58(ZK_APP_ADDRESS));
     const SENDER_PRIVATE_KEY = process.env.SENDER_PRIVATE_KEY;
     if (!SENDER_PRIVATE_KEY) {
-      throw "SENDER_PRIVATE_KEY env var is not define exiting";
+      throw 'SENDER_PRIVATE_KEY env var is not define exiting';
     }
     this.senderPrivateKey = PrivateKey.fromBase58(SENDER_PRIVATE_KEY);
-    this.proofsEnabled = process.env.PROOFS_ENABLED !== 'false';
+    this.proofsEnabled = process.env.PROOFS_ENABLED === 'true';
     this.liveNet = process.env.LIVE_NET === 'true';
+    if (process.env.TX_FEE) {
+      this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
+    }
+
     console.log('Loaded constants from .env');
   }
 
+  async compileContracts() {
+    try {
+      console.log('Compiling verifier contract');
+      const { verificationKey: vk } = await EthVerifier.compile({
+        cache: Cache.FileSystemDefault,
+      });
+      console.log('Verifier contract compiled.');
+      if (this.proofsEnabled || this.liveNet) await EthProcessor.compile();
+      console.log('Contracts compiled.');
+    } catch (err) {
+      console.error(`Error compiling contracts: ${err}`);
+    }
+  }
+
   async createProof(
-    proofArguments: CreateProofArgument,
+    proofArguments: CreateProofArgument
   ): Promise<ReturnType<typeof EthVerifier.compute>> {
     const { sp1PlonkProof, conversionOutputProof } = proofArguments;
 
@@ -87,97 +105,69 @@ export class MinaEthProcessorSubmitter {
   }
 
   async submit(ethProof: EthProofType) {
-    // Update contract state
-    console.log('MinaEthProcessorSubmittor: Creating update tx.');
+    console.log('Creating update transaction.');
     try {
+      if (this.liveNet) fetchAccount({ publicKey: this.zkApp.address });
 
       const updateTx = await Mina.transaction(
-        this.senderPrivateKey.toPublicKey(),
+        { sender: this.senderPrivateKey.toPublicKey(), fee: this.txFee },
         async () => {
           await this.zkApp.update(ethProof);
         }
       );
 
       await updateTx.prove();
-      console.log('MinaEthProcessorSubmittor: transaction proven.');
+      console.log('Transaction proven.');
+
       const tx = await updateTx.sign([this.senderPrivateKey]).send();
-      console.log('MinaEthProcessorSubmittor: transaction sent.');
+      console.log(`Transaction sent${this.liveNet ? ' to livenet.' : '.'}`);
 
-      // TODO: This wont work on mainet. // TODO
-      let m = await Mina.getAccount(this.zkApp.address);
-      console.log('Latest head on chain: ', m.zkapp?.appState[1].toString());
+      if (!this.liveNet) {
+        const account = Mina.getAccount(this.zkApp.address);
+        console.log(
+          'Latest head on local chain:',
+          account.zkapp?.appState[1].toString()
+        );
+      }
       return tx;
-
     } catch (err) {
-      console.error(`An error occured submitting the proof: ${err}`);
+      console.error(`Error submitting proof: ${err}`);
       throw err;
     }
   }
 
   async networkSetUp() {
-    if (this.liveNet == false) {
-      try {
-        // Contract state variables.
-        let deployerAccount: Mina.TestPublicKey;
-        let deployerKey: PrivateKey;
-        let senderAccount: Mina.TestPublicKey;
-        let senderKey: PrivateKey;
-
-        // Initialize local blockchain.
+    try {
+      if (!this.liveNet) {
         const Local = await Mina.LocalBlockchain({
           proofsEnabled: this.proofsEnabled,
         });
         Mina.setActiveInstance(Local);
-        [deployerAccount, senderAccount] = Local.testAccounts;
-        deployerKey = deployerAccount.key;
-        senderKey = senderAccount.key;
-
-        // Overwrite default .env values.
-        this.senderPrivateKey = senderKey;
-        this.deployerPrivateKey = deployerKey;
+        const [deployerAccount, senderAccount] = Local.testAccounts;
+        this.deployerPrivateKey = deployerAccount.key;
+        this.senderPrivateKey = senderAccount.key;
         this.zkAppPrivateKey = PrivateKey.random();
-      } catch (err) {
-        console.error(`An error occured initializing the Mina network: ${err}`);
+      } else {
+        const MINA_RPC_NETWORK_URL =
+          (process.env.MINA_RPC_NETWORK_URL as string) ||
+          'https://api.minascan.io/node/devnet/v1/graphql';
+        const Network = Mina.Network({
+          networkId: 'testnet' as NetworkId,
+          mina: MINA_RPC_NETWORK_URL,
+        });
+        Mina.setActiveInstance(Network);
+        // TODO error if priv key not set?
       }
-    } else {
-      const MINA_RPC_NETWORK_URL = process.env.MINA_RPC_NETWORK_URL as string;
-
-      // Configure Mina livenet network.
-      const Network = Mina.Network({
-        networkId: 'livenet' as NetworkId,
-        mina: MINA_RPC_NETWORK_URL,
-      });
-      Mina.setActiveInstance(Network);
-
-      throw new Error('Livenet not set-up yet');
+    } catch (err) {
+      console.error(`Error initializing Mina network: ${err}`);
     }
-
-    console.log('Finished mina network set up');
+    console.log('Finished Mina network setup');
   }
 
   async deployContract() {
-    let vk: VerificationKey;
-
-    // Compile both contracts.
-    try {
-      console.log('Compiling verifier contract');
-
-      // await EthVerifier.compile({ cache: Cache.FileSystemDefault }); // what about just doing this. JK
-      vk = (await EthVerifier.compile({ cache: Cache.FileSystemDefault }))
-        .verificationKey;
-
-      console.log('Compiled vk');
-      if (this.proofsEnabled) {
-        await EthProcessor.compile();
-      }
-      console.log('Compiled');
-    } catch (err) {
-      console.error(`An error occured compiling the contracts: ${err}`);
-    }
-
     this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
     const deployTx = await Mina.transaction(
-      this.deployerPrivateKey.toPublicKey(),
+      { sender: this.senderPrivateKey.toPublicKey(), fee: this.txFee },
       async () => {
         AccountUpdate.fundNewAccount(this.deployerPrivateKey.toPublicKey());
         await this.zkApp.deploy();
@@ -185,6 +175,6 @@ export class MinaEthProcessorSubmitter {
     );
     await deployTx.prove();
     await deployTx.sign([this.deployerPrivateKey, this.zkAppPrivateKey]).send();
-    console.log('Successfully deployed EthProcessor');
+    console.log('EthProcessor deployed successfully.');
   }
 }

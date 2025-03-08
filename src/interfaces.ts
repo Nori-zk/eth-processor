@@ -1,4 +1,3 @@
-import { toPendingTransactionPromise } from 'o1js/dist/node/lib/mina/transaction';
 import { EthVerifier } from './EthVerifier';
 
 export interface Proof {
@@ -23,15 +22,15 @@ export interface PlonkProof {
 }
 
 export interface ConvertedProofProofData {
-  maxProofsVerified: 0 | 1 | 2,
-  proof: string,
-  publicInput: string[],
-  publicOutput: string[]
+  maxProofsVerified: 0 | 1 | 2;
+  proof: string;
+  publicInput: string[];
+  publicOutput: string[];
 }
 
 export interface ConvertedProofVkData {
   data: string;
-  hash: string 
+  hash: string;
 }
 
 export interface ConvertedProof {
@@ -40,10 +39,10 @@ export interface ConvertedProof {
 }
 
 export interface CreateProofArgument {
-  sp1PlonkProof: PlonkProof,
-  conversionOutputProof: ConvertedProof
+  sp1PlonkProof: PlonkProof;
+  conversionOutputProof: ConvertedProof;
 }
 
-export type EthVerifierComputeOutput = Awaited<ReturnType<typeof EthVerifier.compute>>;
-
-export type PendingTransaction = Awaited<ReturnType<typeof toPendingTransactionPromise>>;
+export type EthVerifierComputeOutput = Awaited<
+  ReturnType<typeof EthVerifier.compute>
+>;

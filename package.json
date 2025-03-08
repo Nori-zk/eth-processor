@@ -27,6 +27,7 @@
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix",
     "eth": "npm run build && node --experimental-vm-modules build/src/EthScript.js",
+    "deploy": "npm run build && node --experimental-vm-modules build/src/deploy.js",
     "prove-and-submit": "npm run build && node --experimental-vm-modules build/src/bin/proveAndSubmit.js"
   },
   "devDependencies": {

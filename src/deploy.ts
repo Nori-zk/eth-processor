@@ -10,9 +10,9 @@ import { EthProcessor } from './EthProcessor.js';
 import { EthVerifier } from './EthVerifier.js';
 // Load environment variables from .env file
 import 'dotenv/config';
-if (!process.env.DEPLOYER_PRIVATE_KEY) {
+if (!process.env.SENDER_PRIVATE_KEY) {
   throw new Error(
-    'Missing required environment variables: DEPLOYER_PRIVATE_KEY '
+    'Missing required environment variables: SENDER_PRIVATE_KEY '
   );
 }
 if (!process.env.ZKAPP_PRIVATE_KEY) {
@@ -20,14 +20,15 @@ if (!process.env.ZKAPP_PRIVATE_KEY) {
   process.env.ZKAPP_PRIVATE_KEY = PrivateKey.random().toBase58();
   console.log('ZKAPP_PRIVATE_KEY', process.env.ZKAPP_PRIVATE_KEY);
 }
-const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY;
+const DEPLOYER_KEY = process.env.SENDER_PRIVATE_KEY;
 const ZKAPP_KEY = process.env.ZKAPP_PRIVATE_KEY;
 if (!DEPLOYER_KEY || !ZKAPP_KEY) {
   throw new Error('Missing required environment variables');
 }
 
 // Network configuration
-const NETWORK_URL = process.env.NETWORK_URL || 'http://localhost:3000/graphql';
+const NETWORK_URL =
+  process.env.MINA_RPC_NETWORK_URL || 'http://localhost:3000/graphql';
 const FEE = Number(process.env.TX_FEE || 0.1) * 1e9; // in nanomina (1 billion = 1.0 mina)
 
 async function deploy() {
