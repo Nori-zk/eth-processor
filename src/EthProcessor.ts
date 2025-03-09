@@ -20,9 +20,7 @@ if (!ADMIN_PRIVATE_KEY) {
   console.log('ADMIN_PRIVATE_KEY not set, using random key');
   ADMIN_PRIVATE_KEY = PrivateKey.random().toBase58();
 }
-export const adminPrivateKey = PrivateKey.fromBase58(
-  ADMIN_PRIVATE_KEY
-);
+export const adminPrivateKey = PrivateKey.fromBase58(ADMIN_PRIVATE_KEY);
 
 export const adminPublicKey = adminPrivateKey.toPublicKey();
 
@@ -32,6 +30,7 @@ export class EthProcessor extends SmartContract {
   @state(Field) verifiedStateRoot = State<Field>(); // todo make PackedString
   @state(UInt64) latestHead = State<UInt64>();
   @state(PublicKey) admin = State<PublicKey>();
+  // @state(Field) latestHeliusStoreInputHash = State<Field>(); //todo
   // events = { 'executionStateRoot-set': Bytes32.provable };//todo change type, if events even possible
   init() {
     super.init();
