@@ -45,7 +45,9 @@ async function deploy() {
     // Compile contracts
     const vk = (await EthVerifier.compile({ cache: Cache.FileSystemDefault }))
       .verificationKey;
-    await EthProcessor.compile({ cache: Cache.FileSystemDefault });
+    console.log('Verifier contract compiled1');
+    const pVK = await EthProcessor.compile({ cache: Cache.FileSystemDefault });
+    console.log('EthProcessor contract compiled2:', pVK.verificationKey.hash);
 
     // Configure Mina network
     const Network = Mina.Network({

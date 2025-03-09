@@ -49,11 +49,12 @@ export class MinaEthProcessorSubmitter {
   async compileContracts() {
     try {
       console.log('Compiling verifier contract');
-      const { verificationKey: vk } = await EthVerifier.compile({
-        cache: Cache.FileSystemDefault,
-      });
-      console.log('Verifier contract compiled.');
-      if (this.proofsEnabled || this.liveNet) await EthProcessor.compile();
+      const { verificationKey: vk } = await EthVerifier.compile();
+      console.log('Verifier contract vk hash compiled:', vk.hash);
+      if (this.proofsEnabled || this.liveNet) {
+        const pVK = (await EthProcessor.compile()).verificationKey;
+        console.log('EthProcessor contract vk hash:', pVK.hash);
+      }
       console.log('Contracts compiled.');
     } catch (err) {
       console.error(`Error compiling contracts: ${err}`);
