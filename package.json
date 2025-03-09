@@ -27,7 +27,7 @@
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix",
     "eth": "npm run build && node --experimental-vm-modules build/src/EthScript.js",
-    "deploy": "npm run build && node --experimental-vm-modules build/src/deploy.js",
+    "deploy": "npm run build && node --max-old-space-size=8192 --experimental-vm-modules build/src/deploy.js",
     "prove-and-submit": "npm run build && node --experimental-vm-modules build/src/bin/proveAndSubmit.js"
   },
   "devDependencies": {
@@ -47,7 +47,7 @@
     "typescript": "^5.4.5"
   },
   "peerDependencies": {
-    "o1js": "2.3.0"
+    "o1js": "2.2.0"
   },
   "engines": {
     "node": ">=18.14.0"
