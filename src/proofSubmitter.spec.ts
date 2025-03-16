@@ -1,3 +1,4 @@
+import { PendingTransaction, Transaction } from 'o1js';
 import {
   buildExampleProofCreateArgument,
   buildExampleProofSeriesCreateArguments,
@@ -61,5 +62,35 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
       i++;
     }
+  });
+
+  test('should run a toJSON fromJSON conversion', async () => {
+    // Construct a MinaEthProcessorSubmittor
+    const proofSubmitter = new MinaEthProcessorSubmitter();
+
+    // Establish the network
+    await proofSubmitter.networkSetUp();
+
+    // Compile contracts.
+    await proofSubmitter.compileContracts();
+    // If local deploy contracts.
+    if (proofSubmitter.liveNet === false) {
+      await proofSubmitter.deployContract();
+    }
+    // Build proof.
+    const ethProof = await proofSubmitter.createProof(
+      buildExampleProofCreateArgument()
+    );
+
+    // Submit proof.
+    const txDetails = await proofSubmitter.submit(ethProof.proof);
+    console.log('txBefore', txDetails);
+
+    const txJSON = txDetails.toJSON();
+    const tx = Transaction.fromJSON(JSON.parse(txJSON)) as unknown as PendingTransaction;
+
+    console.log('txAfter', tx);
+    let abc = await tx.wait();
+    console.log('txhash', abc.hash);
   });
 });
