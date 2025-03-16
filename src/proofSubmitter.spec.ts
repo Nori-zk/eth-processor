@@ -1,4 +1,9 @@
-import { PendingTransaction, Transaction } from 'o1js';
+import {
+  checkZkappTransaction,
+  fetchTransactionStatus,
+  PendingTransaction,
+  Transaction,
+} from 'o1js';
 import {
   buildExampleProofCreateArgument,
   buildExampleProofSeriesCreateArguments,
@@ -16,7 +21,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
     // Compile contracts.
     await proofSubmitter.compileContracts();
     // If local deploy contracts.
-    if (proofSubmitter.liveNet === false) {
+    if (proofSubmitter.testMode === false) {
       await proofSubmitter.deployContract();
     }
     // Build proof.
@@ -25,10 +30,10 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
     );
 
     // Submit proof.
-    const txDetails = await proofSubmitter.submit(ethProof.proof);
-    console.log('TxDetails', txDetails);
-    let abc = await txDetails.wait();
-    console.log('txhash', abc.hash);
+    const txId = await proofSubmitter.submit(ethProof.proof);
+    // console.log('TxDetails', txDetails);
+    // let abc = await txDetails.wait();
+    // console.log('txhash', abc.hash);
   });
 
   test('should perform a series of proof submissions', async () => {
@@ -42,7 +47,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
     await proofSubmitter.compileContracts();
 
     // If local deploy contracts.
-    if (proofSubmitter.liveNet === false) {
+    if (proofSubmitter.testMode === false) {
       await proofSubmitter.deployContract();
     }
 
@@ -74,7 +79,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
     // Compile contracts.
     await proofSubmitter.compileContracts();
     // If local deploy contracts.
-    if (proofSubmitter.liveNet === false) {
+    if (proofSubmitter.testMode === true) {
       await proofSubmitter.deployContract();
     }
     // Build proof.
@@ -83,14 +88,23 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
     );
 
     // Submit proof.
-    const txDetails = await proofSubmitter.submit(ethProof.proof);
-    console.log('txBefore', txDetails);
+    const txId = await proofSubmitter.submit(ethProof.proof);
+    // console.log('txBefore', txId);
 
-    const txJSON = txDetails.toJSON();
-    const tx = Transaction.fromJSON(JSON.parse(txJSON)) as unknown as PendingTransaction;
+    // let check = await fetchTransactionStatus(
+    //   zkappId,
+    //   process.env.MINA_RPC_NETWORK_URL
+    // );
+    // console.log('check', check);
 
-    console.log('txAfter', tx);
-    let abc = await tx.wait();
-    console.log('txhash', abc.hash);
+    // console.log('txAfter', txDetails);
+    // let abc = await txDetails.wait();
+    // console.log('txhash', abc.hash);
+
+    // check = await fetchTransactionStatus(
+    //   zkappId,
+    //   process.env.MINA_RPC_NETWORK_URL
+    // );
+    // console.log('check after', check);
   });
 });
