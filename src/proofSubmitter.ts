@@ -165,9 +165,10 @@ export class MinaEthProcessorSubmitter {
     async submit(ethProof: EthProofType) {
         console.log('Creating update transaction.');
         try {
-          
             await fetchAccount({ publicKey: this.zkApp.address });
-            await fetchAccount({ publicKey: this.senderPrivateKey.toPublicKey() });
+            await fetchAccount({
+                publicKey: this.senderPrivateKey.toPublicKey(),
+            });
 
             const updateTx = await Mina.transaction(
                 {

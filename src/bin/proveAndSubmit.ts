@@ -7,7 +7,7 @@ import { MinaEthProcessorSubmitter } from '../proofSubmitter.js';
 function buildProofCreateArgument() {
     const example: CreateProofArgument = {
         sp1PlonkProof,
-        conversionOutputProof: { vkData, proofData: p0 }
+        conversionOutputProof: { vkData, proofData: p0 },
     };
     return example;
 }
@@ -20,7 +20,9 @@ async function main() {
     await proofSubmitter.networkSetUp();
 
     // Build proof.
-    const ethProof = await proofSubmitter.createProof(buildProofCreateArgument());
+    const ethProof = await proofSubmitter.createProof(
+        buildProofCreateArgument()
+    );
 
     // Submit proof.
     const txDetails = await proofSubmitter.submit(ethProof.proof);
