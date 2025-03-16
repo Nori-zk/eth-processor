@@ -19,10 +19,6 @@ async function main() {
     // Establish the network
     await proofSubmitter.networkSetUp();
 
-    // If local compile and deploy contracts.
-    if (proofSubmitter.liveNet === false) {
-        await proofSubmitter.deployContract();
-    }
     // Build proof.
     const ethProof = await proofSubmitter.createProof(buildProofCreateArgument());
 

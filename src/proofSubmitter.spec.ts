@@ -9,6 +9,7 @@ import {
   buildExampleProofSeriesCreateArguments,
 } from './constructExampleProofs.js';
 import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
+import { wait } from './txWait.js';
 
 describe('MinaEthProcessorSubmittor Integration Test', () => {
   test('should run the proof submission process correctly', async () => {
@@ -20,10 +21,12 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
     // Compile contracts.
     await proofSubmitter.compileContracts();
+
     // If local deploy contracts.
-    if (proofSubmitter.testMode === false) {
+    if (proofSubmitter.testMode === true) {
       await proofSubmitter.deployContract();
     }
+
     // Build proof.
     const ethProof = await proofSubmitter.createProof(
       buildExampleProofCreateArgument()
@@ -31,9 +34,11 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
     // Submit proof.
     const txId = await proofSubmitter.submit(ethProof.proof);
-    // console.log('TxDetails', txDetails);
-    // let abc = await txDetails.wait();
-    // console.log('txhash', abc.hash);
+
+    // Wait for finalization
+    await wait(txId,process.env.MINA_RPC_NETWORK_URL!);
+
+    console.log('Awaited finalization succesfully.');
   });
 
   test('should perform a series of proof submissions', async () => {
@@ -47,7 +52,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
     await proofSubmitter.compileContracts();
 
     // If local deploy contracts.
-    if (proofSubmitter.testMode === false) {
+    if (proofSubmitter.testMode === true) {
       await proofSubmitter.deployContract();
     }
 
@@ -62,14 +67,16 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
       const ethProof = await proofSubmitter.createProof(example);
 
       // Submit proof.
-      const txDetails = await proofSubmitter.submit(ethProof.proof);
-      console.log('TxDetails', txDetails);
+      const txId = await proofSubmitter.submit(ethProof.proof);
+      console.log('TxDetails', txId);
 
+      // Wait for finalization
+      await wait(txId,process.env.MINA_RPC_NETWORK_URL!);
       i++;
     }
   });
 
-  test('should run a toJSON fromJSON conversion', async () => {
+  test('custom wait should await finalisation successfully', async () => {
     // Construct a MinaEthProcessorSubmittor
     const proofSubmitter = new MinaEthProcessorSubmitter();
 
@@ -89,22 +96,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
     // Submit proof.
     const txId = await proofSubmitter.submit(ethProof.proof);
-    // console.log('txBefore', txId);
+    
+    // Wait for finalization
+    await wait(txId,process.env.MINA_RPC_NETWORK_URL!);
 
-    // let check = await fetchTransactionStatus(
-    //   zkappId,
-    //   process.env.MINA_RPC_NETWORK_URL
-    // );
-    // console.log('check', check);
-
-    // console.log('txAfter', txDetails);
-    // let abc = await txDetails.wait();
-    // console.log('txhash', abc.hash);
-
-    // check = await fetchTransactionStatus(
-    //   zkappId,
-    //   process.env.MINA_RPC_NETWORK_URL
-    // );
-    // console.log('check after', check);
   });
 });

@@ -6,6 +6,7 @@ import {
   ConvertedProof,
 } from './interfaces.js';
 import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
+import { wait } from './txWait.js';
 export {
   EthVerifierComputeOutput,
   MinaEthProcessorSubmitter,
@@ -13,4 +14,5 @@ export {
   ConvertedProofVkData,
   PlonkProof,
   ConvertedProof,
+  wait
 };

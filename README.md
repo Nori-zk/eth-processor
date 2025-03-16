@@ -6,6 +6,13 @@
 npm run build
 ```
 
+## How to launch litenet and obtain your SENDER_PRIVATE_KEY environment variable:
+
+1. `npm install -g zkapp-cli`
+2. `zk lightnet start`
+3. `curl localhost:8181/acquire-account`
+4. Put the `sk` in your .env file SENDER_PRIVATE_KEY=......
+
 ## How to run
 
 Replace the nodeVk.json, p0.json and sp1Proof.json in src/proofs with your sp1 proof and proof conversion output and run `npm run prove-and-submit`.
