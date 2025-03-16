@@ -37,7 +37,7 @@ export class MinaEthProcessorSubmitter {
       throw 'SENDER_PRIVATE_KEY env var is not define exiting';
     }
     this.senderPrivateKey = PrivateKey.fromBase58(SENDER_PRIVATE_KEY);
-    this.proofsEnabled = process.env.PROOFS_ENABLED === 'true';
+    this.proofsEnabled = process.env.PROOFS_ENABLED !== 'false';
     this.liveNet = process.env.LIVE_NET === 'true';
     if (process.env.TX_FEE) {
       this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
@@ -168,7 +168,7 @@ export class MinaEthProcessorSubmitter {
   async deployContract() {
     this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
     const deployTx = await Mina.transaction(
-      { sender: this.senderPrivateKey.toPublicKey(), fee: this.txFee },
+      { sender: this.deployerPrivateKey.toPublicKey(), fee: this.txFee },
       async () => {
         AccountUpdate.fundNewAccount(this.deployerPrivateKey.toPublicKey());
         await this.zkApp.deploy();
