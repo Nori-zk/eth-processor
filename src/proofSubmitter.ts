@@ -45,7 +45,8 @@ export class MinaEthProcessorSubmitter {
         this.network = NETWORK as NetworkId;
         this.testMode = NETWORK === 'lightnet';
 
-        if (this.testMode) {
+        if (this.testMode && !process.env.ZKAPP_PRIVATE_KEY) {
+            // This makes sure the local tests work dont remove it
             this.zkAppPrivateKey = PrivateKey.random();
             this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
         } else {
