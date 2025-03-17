@@ -80,19 +80,17 @@ export class MinaEthProcessorSubmitter {
     async compileContracts() {
         try {
             console.log('Compiling verifier contract');
-            const { verificationKey: vk } = await EthVerifier.compile({
-                cache: Cache.FileSystemDefault,
-            });
+            const { verificationKey: vk } = await EthVerifier.compile(); // Future opt cache: Cache.FileSystemDefault,
+
             console.log(
                 'Verifier contract vk hash compiled:',
                 vk.hash.toString()
             );
 
             const pVK = (
-                await EthProcessor.compile({
-                    cache: Cache.FileSystemDefault,
-                })
+                await EthProcessor.compile() // Future opt cache: Cache.FileSystemDefault,
             ).verificationKey;
+
             console.log('EthProcessor contract vk hash:', pVK.hash.toString());
 
             console.log('Contracts compiled.');
