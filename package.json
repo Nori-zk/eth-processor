@@ -1,6 +1,6 @@
 {
   "name": "@nori-zk/ethprocessor",
-  "version": "0.2.26",
+  "version": "1.0.0",
   "description": "zkApp for verifying SP1 Helios Nori proof and storing latest execution state root on Mina",
   "author": "Nori",
   "license": "Apache-2.0",
@@ -47,10 +47,10 @@
     "typescript": "^5.4.5"
   },
   "peerDependencies": {
-    "o1js": "2.2.0"
+    "o1js": "2.3.0"
   },
   "engines": {
-    "node": ">=18.14.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@nori-zk/proof-conversion": "^0.1.3",

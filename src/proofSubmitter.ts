@@ -87,9 +87,7 @@ export class MinaEthProcessorSubmitter {
                 vk.hash.toString()
             );
 
-            const pVK = (
-                await EthProcessor.compile() // Future opt cache: Cache.FileSystemDefault,
-            ).verificationKey;
+            const pVK = (await EthProcessor.compile()).verificationKey; // Future opt cache: Cache.FileSystemDefault,
 
             console.log('EthProcessor contract vk hash:', pVK.hash.toString());
 
@@ -186,11 +184,15 @@ export class MinaEthProcessorSubmitter {
             console.log(
                 `Transaction sent${this.testMode ? ' to testMode.' : '.'}`
             );
-            const txId = tx.data?.sendZkapp.zkapp.id;
+            const txId = tx.data!.sendZkapp.zkapp.id;
+            const txHash = tx.data!.sendZkapp.zkapp.hash;
             if (!txId) {
                 throw new Error('txId is undefined');
             }
-            return txId;
+            return {
+                txId,
+                txHash,
+            };
         } catch (err) {
             console.error(`Error submitting proof: ${err}`);
             throw err;

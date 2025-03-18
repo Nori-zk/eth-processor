@@ -1,10 +1,4 @@
 import {
-    checkZkappTransaction,
-    fetchTransactionStatus,
-    PendingTransaction,
-    Transaction,
-} from 'o1js';
-import {
     buildExampleProofCreateArgument,
     buildExampleProofSeriesCreateArguments,
 } from './constructExampleProofs.js';
@@ -33,10 +27,10 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         );
 
         // Submit proof.
-        const txId = await proofSubmitter.submit(ethProof.proof);
+        const result = await proofSubmitter.submit(ethProof.proof);
 
         // Wait for finalization
-        await wait(txId, process.env.MINA_RPC_NETWORK_URL!);
+        await wait(result.txId, process.env.MINA_RPC_NETWORK_URL!);
 
         console.log('Awaited finalization succesfully.');
     });
@@ -67,11 +61,11 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
             const ethProof = await proofSubmitter.createProof(example);
 
             // Submit proof.
-            const txId = await proofSubmitter.submit(ethProof.proof);
-            console.log('TxDetails', txId);
+            const result = await proofSubmitter.submit(ethProof.proof);
+            console.log('txHash', result.txHash);
 
             // Wait for finalization
-            await wait(txId, process.env.MINA_RPC_NETWORK_URL!);
+            await wait(result.txHash, process.env.MINA_RPC_NETWORK_URL!);
             i++;
         }
     });
@@ -95,9 +89,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         );
 
         // Submit proof.
-        const txId = await proofSubmitter.submit(ethProof.proof);
+        const result = await proofSubmitter.submit(ethProof.proof);
 
         // Wait for finalization
-        await wait(txId, process.env.MINA_RPC_NETWORK_URL!);
+        await wait(result.txId, process.env.MINA_RPC_NETWORK_URL!);
     });
 });
