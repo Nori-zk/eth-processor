@@ -4,9 +4,11 @@ export async function wait(
     txId: string,
     minaRPCNetworkUrl: string,
     maxAttempts = 50,
-    intervalMs = 20000
+    intervalMs = 20000,
+    maxUnknownCount = 5
 ): Promise<boolean> {
     let attempt = 0;
+    let unknownCount = 0;
     return new Promise((resolve, reject) => {
         (async () => {
             attempt++;
@@ -24,6 +26,10 @@ export async function wait(
                         break;
                     }
                     case 'UNKNOWN': {
+                        if (unknownCount < maxUnknownCount) {
+                            unknownCount++;
+                            break;
+                        }
                         reject(new Error(`Transaction UNKNOWN status.`));
                         break;
                     }
