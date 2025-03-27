@@ -65,7 +65,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
             console.log('txHash', result.txHash);
 
             // Wait for finalization
-            await wait(result.txHash, process.env.MINA_RPC_NETWORK_URL!);
+            await wait(result.txId, process.env.MINA_RPC_NETWORK_URL!);
             i++;
         }
     });

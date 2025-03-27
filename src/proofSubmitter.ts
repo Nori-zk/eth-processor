@@ -171,7 +171,7 @@ export class MinaEthProcessorSubmitter {
                 {
                     sender: this.senderPrivateKey.toPublicKey(),
                     fee: this.txFee,
-                    memo: `Nori synced Ethereum global state to slot ${ethProof.publicInput.newHead.toString()}`,
+                    memo: `State for slot ${ethProof.publicInput.newHead.toString()} set`,
                 },
                 async () => {
                     await this.zkApp.update(ethProof);
