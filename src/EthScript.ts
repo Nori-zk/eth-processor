@@ -10,9 +10,11 @@ import {
 import { EthProcessor } from './EthProcessor.js';
 import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
 import fs from 'fs';
-import { NodeProofLeft } from '@nori-zk/proof-conversion';
+import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
 import { ethers } from 'ethers';
 import { PATH_TO_O1_PROOF, PATH_TO_SP1_PROOF } from './proofs.js';
+
+const logger = new Logger('EthProcessorScript');
 
 // Configuration
 const proofsEnabled = true;
@@ -36,9 +38,9 @@ async function main() {
             await EthProcessor.compile();
         }
         // const ethV = await EthVerifier.analyzeMethods();
-        // console.log('ethV', ethV.compute.summary());
+        // logger.log('ethV', ethV.compute.summary());
         // const ethP = await EthProcessor.analyzeMethods();
-        // console.log('ethP', ethP);
+        // logger.log('ethP', ethP);
 
         // Initialize local blockchain
         const Local = await Mina.LocalBlockchain({ proofsEnabled });
@@ -58,7 +60,7 @@ async function main() {
         });
         await deployTx.prove();
         await deployTx.sign([deployerKey, zkAppPrivateKey]).send();
-        console.log('Successfully deployed EthProcessor');
+        logger.log('Successfully deployed EthProcessor');
 
         // Process proof data
         const rawProof = await NodeProofLeft.fromJSON(
@@ -98,11 +100,11 @@ async function main() {
             startSyncComitteHash: Bytes32.fromHex(decoded[7].slice(2)),
         });
         // Compute and verify proof
-        console.log('Computing proof...');
+        logger.log('Computing proof...');
         const proof = await EthVerifier.compute(input, rawProof);
 
         // Update contract state
-        console.log('Creating update transaction...');
+        logger.log('Creating update transaction...');
         const updateTx = await Mina.transaction(senderAccount, async () => {
             await zkApp.update(proof.proof);
         });
@@ -112,17 +114,17 @@ async function main() {
         // Verify updated state
         const updatedState = Mina.getAccount(zkAppAddress);
         const updatedHeadState = zkApp.latestHead.get();
-        console.log(
-            'Updated latestHead:',
-            updatedState.zkapp?.appState[1].toString()
+        logger.log(
+            `Updated latestHead: ${updatedState.zkapp?.appState[1].toString()}`,
+            
         );
-        console.log('Updated head state:', updatedHeadState.toString());
+        logger.log(`Updated head state: ${updatedHeadState.toString()}`);
         // const events = await zkApp.fetchEvents();
-        // console.log(events[0].event.data);
+        // logger.log(events[0].event.data);
     } catch (error) {
-        console.error('Error:', error);
+        logger.error(`Error: ${String(error)}`);
         process.exit(1);
     }
 }
 
-main().catch(console.error);
+main().catch(logger.error);

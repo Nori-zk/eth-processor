@@ -1,7 +1,7 @@
 import { EthProcessor, EthProofType } from './EthProcessor.js';
 import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
 import { ethers } from 'ethers';
-import { NodeProofLeft } from '@nori-zk/proof-conversion';
+import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
 import {
     AccountUpdate,
     Mina,
@@ -16,6 +16,8 @@ import {
     Account,
 } from 'o1js';
 import { CreateProofArgument } from './interfaces.js';
+
+const logger = new Logger('EthProcessorSubmitter');
 
 export class MinaEthProcessorSubmitter {
     zkApp: EthProcessor;
@@ -63,7 +65,7 @@ export class MinaEthProcessorSubmitter {
 
         this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
 
-        console.log('Loaded constants from .env');
+        logger.log('Loaded constants from .env');
     }
     async networkSetUp() {
         const MINA_RPC_NETWORK_URL =
@@ -75,25 +77,24 @@ export class MinaEthProcessorSubmitter {
             mina: MINA_RPC_NETWORK_URL,
         });
         Mina.setActiveInstance(Network);
-        console.log('Finished Mina network setup');
+        logger.log('Finished Mina network setup');
     }
     async compileContracts() {
         try {
-            console.log('Compiling verifier contract');
+            logger.log('Compiling verifier contract');
             const { verificationKey: vk } = await EthVerifier.compile(); // Future opt cache: Cache.FileSystemDefault,
 
-            console.log(
-                'Verifier contract vk hash compiled:',
-                vk.hash.toString()
+            logger.log(
+                `Verifier contract vk hash compiled: ${vk.hash.toString()}`
             );
 
             const pVK = (await EthProcessor.compile()).verificationKey; // Future opt cache: Cache.FileSystemDefault,
 
-            console.log('EthProcessor contract vk hash:', pVK.hash.toString());
+            logger.log(`EthProcessor contract vk hash: ${pVK.hash.toString()}`);
 
-            console.log('Contracts compiled.');
+            logger.log('Contracts compiled.');
         } catch (err) {
-            console.error(`Error compiling contracts: ${err}`);
+            logger.error(`Error compiling contracts: ${err}`);
         }
     }
     async deployContract() {
@@ -106,13 +107,13 @@ export class MinaEthProcessorSubmitter {
                 await this.zkApp.deploy();
             }
         );
-        console.log('Deploy transaction created successfully.');
+        logger.log('Deploy transaction created successfully.');
         await deployTx.prove();
         await deployTx
             .sign([this.senderPrivateKey, this.zkAppPrivateKey])
             .send()
             .wait();
-        console.log('EthProcessor deployed successfully.');
+        logger.log('EthProcessor deployed successfully.');
     }
 
     async createProof(
@@ -155,12 +156,12 @@ export class MinaEthProcessorSubmitter {
         });
 
         // Compute and verify proof.
-        console.log('Computing proof.');
+        logger.log('Computing proof.');
         return EthVerifier.compute(input, rawProof);
     }
 
     async submit(ethProof: EthProofType) {
-        console.log('Creating update transaction.');
+        logger.log('Creating update transaction.');
         try {
             await fetchAccount({ publicKey: this.zkApp.address });
             await fetchAccount({
@@ -178,10 +179,10 @@ export class MinaEthProcessorSubmitter {
             );
 
             await updateTx.prove();
-            console.log('Transaction proven.');
+            logger.log('Transaction proven.');
 
             const tx = await updateTx.sign([this.senderPrivateKey]).send();
-            console.log(
+            logger.log(
                 `Transaction sent${this.testMode ? ' to testMode.' : '.'}`
             );
             const txId = tx.data!.sendZkapp.zkapp.id;
@@ -194,7 +195,7 @@ export class MinaEthProcessorSubmitter {
                 txHash,
             };
         } catch (err) {
-            console.error(`Error submitting proof: ${err}`);
+            logger.error(`Error submitting proof: ${err}`);
             throw err;
         }
     }

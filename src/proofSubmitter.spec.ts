@@ -1,9 +1,22 @@
+import { Logger, LogPrinter } from '@nori-zk/proof-conversion';
 import {
     buildExampleProofCreateArgument,
     buildExampleProofSeriesCreateArguments,
 } from './constructExampleProofs.js';
 import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
 import { wait } from './txWait.js';
+
+new LogPrinter('[TestEthProcessor]', [
+    'log',
+    'info',
+    'warn',
+    'error',
+    'debug',
+    'fatal',
+    'verbose',
+]);
+
+const logger = new Logger('JestEthProcessor');
 
 describe('MinaEthProcessorSubmittor Integration Test', () => {
     test('should run the proof submission process correctly', async () => {
@@ -32,7 +45,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         // Wait for finalization
         await wait(result.txId, process.env.MINA_RPC_NETWORK_URL!);
 
-        console.log('Awaited finalization succesfully.');
+        logger.log('Awaited finalization succesfully.');
     });
 
     test('should perform a series of proof submissions', async () => {
@@ -54,7 +67,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         const seriesExamples = buildExampleProofSeriesCreateArguments();
         let i = 1;
         for (const example of seriesExamples) {
-            console.log(
+            logger.log(
                 `Running Example ${i} -------------------------------------------------------`
             );
             // Build proof.
@@ -62,7 +75,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
             // Submit proof.
             const result = await proofSubmitter.submit(ethProof.proof);
-            console.log('txHash', result.txHash);
+            logger.log(`txHash: ${result.txHash}`);
 
             // Wait for finalization
             await wait(result.txHash, process.env.MINA_RPC_NETWORK_URL!);
