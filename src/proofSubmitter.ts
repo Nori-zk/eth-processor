@@ -98,6 +98,7 @@ export class MinaEthProcessorSubmitter {
 
             logger.log('Contracts compiled.');
         } catch (err) {
+            console.log((err as any).stack);
             logger.error(`Error compiling contracts: ${err}`);
         }
     }

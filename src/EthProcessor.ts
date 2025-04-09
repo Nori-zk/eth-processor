@@ -11,6 +11,7 @@ import {
     DeployArgs,
     PublicKey,
     Permissions,
+    UInt8,
 } from 'o1js';
 import { EthProof, Bytes32 } from './EthVerifier.js';
 import 'dotenv/config';
@@ -73,22 +74,20 @@ export class EthProcessor extends SmartContract {
         );
 
         // Store hash high byte
-        const prevStoreHashHighByte =
-            ethProof.publicInput.prevStoreHash.bytes.slice(0, 1);
         const prevStoreHashHighByteField = new Field(0);
-        prevStoreHashHighByteField.add(prevStoreHashHighByte[0].value);
+        prevStoreHashHighByteField.add(
+            ethProof.publicInput.prevStoreHash.bytes[0].value
+        );
         prevStoreHashHighByteField.assertEquals(
             this.latestHeliusStoreInputHashHighByte.getAndRequireEquals()
         );
 
         // Store hash lower 31 bytes
-        const prevStoreHashLowerBytes =
-            ethProof.publicInput.prevStoreHash.bytes.slice(1, 32);
         const prevStoreHashLowerBytesField = new Field(0);
-        for (let i = 0; i < 32; i++) {
+        for (let i = 1; i < 32; i++) {
             prevStoreHashLowerBytesField
                 .mul(256)
-                .add(prevStoreHashLowerBytes[i].value);
+                .add(ethProof.publicInput.prevStoreHash.bytes[i].value);
         }
 
         // Verification of previous store hash
@@ -101,7 +100,7 @@ export class EthProcessor extends SmartContract {
 
         ethProof.verify();
 
-        // 
+        // Update contract values
 
         this.latestHead.set(proofHead);
 
@@ -115,6 +114,5 @@ export class EthProcessor extends SmartContract {
         this.latestHeliusStoreInputHashLowerBytes.set(
             ethProof.publicOutput.storeHashLowerBytesField
         );
-
     }
 }

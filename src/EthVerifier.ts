@@ -123,17 +123,17 @@ const EthVerifier = ZkProgram({
                 piDigest.assertEquals(proof.publicOutput.rightOut);
 
                 // Store hash high byte
-                const storeHashHighByte = input.storeHash.bytes.slice(0, 1);
-                const storeHashHighByteField =  new Field(0);
-                storeHashHighByteField.add(storeHashHighByte[0].value);
+                const storeHashHighByteField = new Field(0);
+
+                storeHashHighByteField.add(input.storeHash.bytes[0].value);
 
                 // Store hash lower 31 bytes
-                const storeHashLowerBytes = input.storeHash.bytes.slice(1, 32);
                 const storeHashLowerBytesField = new Field(0);
-                for (let i = 0; i < 32; i++) {
+
+                for (let i = 1; i < 32; i++) {
                     storeHashLowerBytesField
                         .mul(256)
-                        .add(storeHashLowerBytes[i].value);
+                        .add(input.storeHash.bytes[i].value);
                 }
 
                 return {
