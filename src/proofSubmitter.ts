@@ -90,6 +90,10 @@ export class MinaEthProcessorSubmitter {
 
             const pVK = (await EthProcessor.compile()).verificationKey; // Future opt cache: Cache.FileSystemDefault,
 
+            console.log(await EthProcessor.analyzeMethods());
+
+            process.exit(1);
+
             logger.log(`EthProcessor contract vk hash: ${pVK.hash.toString()}`);
 
             logger.log('Contracts compiled.');
@@ -139,6 +143,8 @@ export class MinaEthProcessorSubmitter {
                 'uint64',
                 'bytes32',
                 'bytes32',
+                'bytes32',
+                'bytes32',
             ],
             new Uint8Array(Buffer.from(ethSP1Proof.public_values.buffer.data))
         );
@@ -152,7 +158,9 @@ export class MinaEthProcessorSubmitter {
             prevHeader: Bytes32.fromHex(decoded[4].slice(2)),
             prevHead: UInt64.from(decoded[5]),
             syncCommitteeHash: Bytes32.fromHex(decoded[6].slice(2)),
-            startSyncComitteHash: Bytes32.fromHex(decoded[7].slice(2)),
+            startSyncCommitteeHash: Bytes32.fromHex(decoded[7].slice(2)),
+            prevStoreHash: Bytes32.fromHex(decoded[8].slice(2)),
+            storeHash: Bytes32.fromHex(decoded[9].slice(2))
         });
 
         // Compute and verify proof.

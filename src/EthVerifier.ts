@@ -17,7 +17,6 @@ import {
     parsePlonkPublicInputsProvable,
     wordToBytes,
 } from '@nori-zk/proof-conversion';
-import fs from 'fs';
 
 class Bytes32 extends Bytes(32) {}
 
@@ -30,6 +29,8 @@ class Bytes32 extends Bytes(32) {}
 //         bytes32 prevHeader;
 //         uint256 prevHead;
 //         bytes32 syncCommitteeHash;
+//         bytes32 prevStoreHash;
+//         bytes32 storeHash;
 //     }
 // }
 class EthInput extends Struct({
@@ -40,12 +41,18 @@ class EthInput extends Struct({
     prevHeader: Bytes32.provable,
     prevHead: UInt64,
     syncCommitteeHash: Bytes32.provable,
-    startSyncComitteHash: Bytes32.provable,
+    startSyncCommitteeHash: Bytes32.provable,
+    prevStoreHash: Bytes32.provable,
+    storeHash: Bytes32.provable,
+}) {}
+class EthOutput extends Struct({
+    storeHashHighByteField: Field,
+    storeHashLowerBytesField: Field,
 }) {}
 const EthVerifier = ZkProgram({
     name: 'EthVerifier',
     publicInput: EthInput,
-    publicOutput: Field,
+    publicOutput: EthOutput,
     methods: {
         compute: {
             privateInputs: [NodeProofLeft],
@@ -60,7 +67,7 @@ const EthVerifier = ZkProgram({
                     '356461990772566150229371218896390328991028774865907497243179150670146300968' //$programVK todo check ?
                 );
 
-                // p0 = ConverterInputMessage.proofConversionOutput.proofData.publicOutput[2]
+                // p0 = ConverterInputMessage.proofConversionOutput.proofData.publicOutput[2] // hash of publicOutput of sp1
                 const ethNodeVk = Field.from(
                     '28260390150731392236641024269553678227550500922769773705331708504563351523466'
                 );
@@ -95,10 +102,9 @@ const EthVerifier = ZkProgram({
                 bytes = bytes.concat(input.prevHeader.bytes);
                 bytes = bytes.concat(padUInt64To32Bytes(input.prevHead));
                 bytes = bytes.concat(input.syncCommitteeHash.bytes);
-                bytes = bytes.concat(input.startSyncComitteHash.bytes);
-
-                // bytes = bytes.concat(uint64ToBytes32(input.prevHead));
-                // bytes = bytes.concat(uint64ToBytes32(input.newHead));
+                bytes = bytes.concat(input.startSyncCommitteeHash.bytes);
+                bytes = bytes.concat(input.prevStoreHash.bytes);
+                bytes = bytes.concat(input.storeHash.bytes);
 
                 // Check that zkporgraminput is same as passed to the SP1 program
                 const pi0 = ethPlonkVK;
@@ -116,7 +122,26 @@ const EthVerifier = ZkProgram({
 
                 piDigest.assertEquals(proof.publicOutput.rightOut);
 
-                return { publicOutput: new Field(1) };
+                // Store hash high byte
+                const storeHashHighByte = input.storeHash.bytes.slice(0, 1);
+                const storeHashHighByteField =  new Field(0);
+                storeHashHighByteField.add(storeHashHighByte[0].value);
+
+                // Store hash lower 31 bytes
+                const storeHashLowerBytes = input.storeHash.bytes.slice(1, 32);
+                const storeHashLowerBytesField = new Field(0);
+                for (let i = 0; i < 32; i++) {
+                    storeHashLowerBytesField
+                        .mul(256)
+                        .add(storeHashLowerBytes[i].value);
+                }
+
+                return {
+                    publicOutput: new EthOutput({
+                        storeHashHighByteField,
+                        storeHashLowerBytesField,
+                    }),
+                };
             },
         },
     },
