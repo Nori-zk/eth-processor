@@ -125,7 +125,7 @@ const EthVerifier = ZkProgram({
                 // Store hash high byte
                 const storeHashHighByteField = new Field(0);
 
-                storeHashHighByteField.add(input.storeHash.bytes[0].value);
+                storeHashHighByteField.add(input.storeHash.bytes[0].value); // budget of 31 bytes.... slot is 8 bytes (u64), 
 
                 // Store hash lower 31 bytes
                 const storeHashLowerBytesField = new Field(0);

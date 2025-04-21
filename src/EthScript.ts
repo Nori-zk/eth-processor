@@ -97,7 +97,9 @@ async function main() {
             prevHeader: Bytes32.fromHex(decoded[4].slice(2)),
             prevHead: UInt64.from(decoded[5]),
             syncCommitteeHash: Bytes32.fromHex(decoded[6].slice(2)),
-            startSyncComitteHash: Bytes32.fromHex(decoded[7].slice(2)),
+            startSyncCommitteeHash: Bytes32.fromHex(decoded[7].slice(2)),
+            prevStoreHash: Bytes32.fromHex(decoded[8].slice(2)),
+            storeHash: Bytes32.fromHex(decoded[9].slice(2)),
         });
         // Compute and verify proof
         logger.log('Computing proof...');
@@ -115,8 +117,7 @@ async function main() {
         const updatedState = Mina.getAccount(zkAppAddress);
         const updatedHeadState = zkApp.latestHead.get();
         logger.log(
-            `Updated latestHead: ${updatedState.zkapp?.appState[1].toString()}`,
-            
+            `Updated latestHead: ${updatedState.zkapp?.appState[1].toString()}`
         );
         logger.log(`Updated head state: ${updatedHeadState.toString()}`);
         // const events = await zkApp.fetchEvents();

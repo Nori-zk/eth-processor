@@ -90,9 +90,7 @@ export class MinaEthProcessorSubmitter {
 
             const pVK = (await EthProcessor.compile()).verificationKey; // Future opt cache: Cache.FileSystemDefault,
 
-            console.log(await EthProcessor.analyzeMethods());
-
-            process.exit(1);
+            // console.log(await EthProcessor.analyzeMethods()); // Used for debugging to make sure our contract compiles fully
 
             logger.log(`EthProcessor contract vk hash: ${pVK.hash.toString()}`);
 
