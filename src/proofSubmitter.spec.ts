@@ -79,6 +79,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
             // Wait for finalization
             await wait(result.txHash, process.env.MINA_RPC_NETWORK_URL!);
+            await new Promise((res) => setTimeout(res, 1000)); // Sleep a bit because in test mode wait doesn't really stall
             i++;
         }
     });
