@@ -101,6 +101,7 @@ async function main() {
             prevStoreHash: Bytes32.fromHex(decoded[8].slice(2)),
             storeHash: Bytes32.fromHex(decoded[9].slice(2)),
         });
+
         // Compute and verify proof
         logger.log('Computing proof...');
         const proof = await EthVerifier.compute(input, rawProof);

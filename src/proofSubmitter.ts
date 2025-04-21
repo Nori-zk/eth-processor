@@ -159,7 +159,7 @@ export class MinaEthProcessorSubmitter {
             syncCommitteeHash: Bytes32.fromHex(decoded[6].slice(2)),
             startSyncCommitteeHash: Bytes32.fromHex(decoded[7].slice(2)),
             prevStoreHash: Bytes32.fromHex(decoded[8].slice(2)),
-            storeHash: Bytes32.fromHex(decoded[9].slice(2))
+            storeHash: Bytes32.fromHex(decoded[9].slice(2)),
         });
 
         // Compute and verify proof.
