@@ -33,6 +33,34 @@ Interest observation if run more than one test (thus creating more than one inst
 npm run coverage
 ```
 
+
+## Configuration
+
+Env vars (create a .env file):
+
+```
+MINA_RPC_NETWORK_URL=
+SENDER_PRIVATE_KEY=
+ADMIN_PRIVATE_KEY=
+TX_FEE=
+
+ZKAPP_PRIVATE_KEY=
+ZK_APP_ADDRESS=
+
+NETWORK=
+```
+
+- **MINA_RPC_NETWORK_URL**: Mina network RPC endpoint URL.
+- **SENDER_PRIVATE_KEY**: private key of the transaction sender.
+- **ADMIN_PRIVATE_KEY**: private key for administrative control operations.
+- **TX_FEE**: transaction fee to be used when submitting transactions.
+
+- **ZKAPP_PRIVATE_KEY**: private key for the zkApp account.
+- **ZK_APP_ADDRESS**: deployed address of the zkApp contract.
+
+- **NETWORK**: specifies the target network (e.g., `devnet`, `litenet`).
+
+
 ## License
 
 [Apache-2.0](LICENSE)
