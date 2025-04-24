@@ -16,6 +16,8 @@ import {
     Account,
 } from 'o1js';
 import { CreateProofArgument } from './interfaces.js';
+import { ethVerifierVkHash } from './vks/EthVerifier.VKHash.js';
+import { ethProcessorVkHash } from './vks/EthProcessor.VKHash.js';
 
 const logger = new Logger('EthProcessorSubmitter');
 
@@ -127,9 +129,9 @@ export class MinaEthProcessorSubmitter {
             logger.log('Compiling EthVerifier contract.');
             const { verificationKey: vk } = await EthVerifier.compile(); // Future opt cache: Cache.FileSystemDefault,
 
-            const ethVerifierVkHash = vk.hash.toString();
+            const calculateEthVerifierVkHash = vk.hash.toString();
             logger.log(
-                `Verifier contract vk hash compiled: '${ethVerifierVkHash}'.`
+                `Verifier contract vk hash compiled: '${calculateEthVerifierVkHash}'.`
             );
 
             logger.log('Compiling EthProcessor contract.');
@@ -137,23 +139,23 @@ export class MinaEthProcessorSubmitter {
 
             // console.log(await EthProcessor.analyzeMethods()); // Used for debugging to make sure our contract compiles fully
 
-            const ethProcessorVKHash = pVK.hash.toString();
-            logger.log(`EthProcessor contract vk hash compiled: '${ethProcessorVKHash}'.`);
+            const calculateEthProcessorVKHash = pVK.hash.toString();
+            logger.log(`EthProcessor contract vk hash compiled: '${calculateEthProcessorVKHash}'.`);
 
             // Validation
 
             let disagree: string[] = [];
 
-            if (ethVerifierVkHash !== ethVerifierVkHash) {
-                disagree.push(`Computed ethVerifierVkHash '${ethVerifierVkHash}' disagrees with the one contained cached within this repository '${ethVerifierVkHash}'.`);
+            if (calculateEthVerifierVkHash !== ethVerifierVkHash) {
+                disagree.push(`Computed ethVerifierVkHash '${calculateEthVerifierVkHash}' disagrees with the one cached within this repository '${ethVerifierVkHash}'.`);
             }
 
-            if (ethProcessorVKHash !== ethProcessorVKHash) {
-                disagree.push(`Computed ethProcessorVKHash '${ethProcessorVKHash}' disagrees with the one provided cached within this repository '${ethProcessorVKHash}'.`);
+            if (calculateEthProcessorVKHash !== ethProcessorVkHash) {
+                disagree.push(`Computed ethProcessorVKHash '${calculateEthProcessorVKHash}' disagrees with the one cached within this repository '${ethProcessorVkHash}'.`);
             }
 
             if (disagree.length) {
-                disagree.push(`Refusing to start. Do you need to run 'npm run deploy' in the eth-processor repository and commit the changed?`);
+                disagree.push(`Refusing to start. Do you need to run 'npm run deploy' in the eth-processor repository and commit the change?`);
                 const errStr = disagree.join('\n');
                 throw new Error(errStr);
             }

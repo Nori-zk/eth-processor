@@ -21,6 +21,6 @@
     "allowSyntheticDefaultImports": true,
     "useDefineForClassFields": false,
   },
-  "include": ["./src", "./src/proofs/*.json"],
+  "include": ["./src", "./src/proofs/*.json", "./src/vks/*.json"],
   "exclude": ["**/*.spec.ts"]
 }
