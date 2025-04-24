@@ -35,6 +35,7 @@ NETWORK=
 
 ## How to deploy (launch a new contract)
 
+Make sure to clear your 01js cache, if it exists already.
 Setup your `.env` file in the root directory. Set `MINA_RPC_NETWORK_URL=<url>`, `NETWORK=<mainnet or devnet or litenet>` and your `SENDER_PRIVATE_KEY`.
 
 Run `npm run deploy`. After which `.env.nori-eth-processor` will have been created in the root directory of the project.
@@ -54,11 +55,11 @@ Then finally: `npm run prove-and-submit`
 
 ## How to re-deploy (updating an existing contract)
 
-This is a work in progress. 
+This is a work in progress. Make sure to clear your 01js cache.
 
 ## Troubleshooting
 
-There are constant problems with 01js's cache mechanism. If you expect your projects vks have change, then remove the `~/.cache/o1js/` contents
+There are constant problems with 01js's cache being stale. If you expect your projects vks have change, then remove the `~/.cache/o1js/` contents
 before running `npm run deploy`.
 
 ## How to run tests

@@ -90,12 +90,12 @@ function writeSuccessDetailsToFiles(
     logger.log(`Writing vks hashes to '${ethProcessorVkHashFileOutputPath}' and '${ethVerifierVkHashFileOutputPath}'`);
     writeFileSync(
         ethProcessorVkHashFileOutputPath,
-        `"${ethVerifierVkHash}"`,
+        `"${ethProcessorVKHash}"`,
         'utf8'
     );
     writeFileSync(
         ethVerifierVkHashFileOutputPath,
-        `"${ethProcessorVKHash}"`,
+        `"${ethVerifierVkHash}"`,
         'utf8'
     );
     logger.log(`Wrote vks hashes to '${ethProcessorVkHashFileOutputPath}' and '${ethVerifierVkHashFileOutputPath}' successfully.`);

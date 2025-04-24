@@ -143,6 +143,7 @@ export class MinaEthProcessorSubmitter {
             logger.log(`EthProcessor contract vk hash compiled: '${calculateEthProcessorVKHash}'.`);
 
             // Validation
+            logger.log('Verifying computed Vk hashes.');
 
             let disagree: string[] = [];
 
