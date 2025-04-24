@@ -31,7 +31,7 @@ export class MinaEthProcessorSubmitter {
     testMode: boolean;
     txFee: number;
 
-    constructor(private type: 'plonk' = 'plonk') {
+    /*constructor(private type: 'plonk' = 'plonk') {
         logger.info(`🛠 MinaEthProcessorSubmitter constructor called!`);
         const errors: string[] = [];
         
@@ -72,12 +72,10 @@ export class MinaEthProcessorSubmitter {
         this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
     
         logger.log('Loaded constants from .env');
-    }
+    }*/
 
-    /*constructor(private type: 'plonk' = 'plonk') {
+    constructor(private type: 'plonk' = 'plonk') {
         const senderPrivateKeyBase58 = process.env.SENDER_PRIVATE_KEY;
-        this.ethVerifierVkHash = process.env.ETH_VERIFIER_VK_HASH;
-        this.ethProcessorVKHash = process.env.ETH_PROCESSOR_VK_HASH;
 
         if (!senderPrivateKeyBase58) {
             throw 'SENDER_PRIVATE_KEY env var is not define exiting';
@@ -107,7 +105,7 @@ export class MinaEthProcessorSubmitter {
         this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
 
         logger.log('Loaded constants from .env');
-    }*/
+    }
 
 
     async networkSetUp() {
