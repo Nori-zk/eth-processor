@@ -61,16 +61,15 @@ const networkUrl =
     process.env.MINA_RPC_NETWORK_URL || 'http://localhost:3000/graphql'; // Should probably validate here the network type. FIXME
 const fee = Number(process.env.TX_FEE || 0.1) * 1e9; // in nanomina (1 billion = 1.0 mina)
 
-function writeSuccessDetailsToEnvFile(
+function writeSuccessDetailsToFiles(
     zkAppAddressBase58: string,
     ethVerifierVkHash: string,
     ethProcessorVKHash: string
 ) {
+    // Write env file.
     const env = {
         ZKAPP_PRIVATE_KEY: zkAppPrivateKeyBase58,
-        ZKAPP_ADDRESS: zkAppAddressBase58,
-        ETH_VERIFIER_VK_HASH: ethVerifierVkHash,
-        ETH_PROCESSOR_VK_HASH: ethProcessorVKHash,
+        ZKAPP_ADDRESS: zkAppAddressBase58
     };
     const envFileStr =
         Object.entries(env)
@@ -84,6 +83,23 @@ function writeSuccessDetailsToEnvFile(
         'utf8'
     );
     logger.log(`Wrote '${envFileOutputPath}' successfully.`);
+
+    // Write vks
+    const ethProcessorVkHashFileOutputPath = resolve(rootDir, '..', '..', 'src', 'vks', 'EthProcessor.VkHash.json');
+    const ethVerifierVkHashFileOutputPath = resolve(rootDir, '..', '..', 'src', 'vks', 'EthVerifier.VkHash.json');
+    logger.log(`Writing vks hashes to '${ethProcessorVkHashFileOutputPath}' and '${ethVerifierVkHashFileOutputPath}'`);
+    writeFileSync(
+        ethProcessorVkHashFileOutputPath,
+        `"${ethVerifierVkHash}"`,
+        'utf8'
+    );
+    writeFileSync(
+        ethVerifierVkHashFileOutputPath,
+        `"${ethProcessorVKHash}"`,
+        'utf8'
+    );
+    logger.log(`Wrote vks hashes to '${ethProcessorVkHashFileOutputPath}' and '${ethVerifierVkHashFileOutputPath}' successfully.`);
+
 }
 
 async function deploy() {
@@ -146,7 +162,7 @@ async function deploy() {
     logger.log('Deployment successful!');
     logger.log(`Contract admin: '${currentAdmin?.toBase58()}'.`);
 
-    writeSuccessDetailsToEnvFile(zkAppAddressBase58, ethVerifierVkHash, ethProcessorVKHash);
+    writeSuccessDetailsToFiles(zkAppAddressBase58, ethVerifierVkHash, ethProcessorVKHash);
 }
 
 // Execute deployment

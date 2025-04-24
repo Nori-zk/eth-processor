@@ -28,8 +28,6 @@ export class MinaEthProcessorSubmitter {
     proofsEnabled: boolean;
     testMode: boolean;
     txFee: number;
-    ethVerifierVkHash: string;
-    ethProcessorVKHash: string;
 
     constructor(private type: 'plonk' = 'plonk') {
         logger.info(`🛠 MinaEthProcessorSubmitter constructor called!`);
@@ -38,12 +36,8 @@ export class MinaEthProcessorSubmitter {
         const senderPrivateKeyBase58 = process.env.SENDER_PRIVATE_KEY as string;
         const network = process.env.NETWORK as string;
         const zkAppPrivateKeyBase58 = process.env.ZKAPP_PRIVATE_KEY as string;
-        this.ethVerifierVkHash = process.env.ETH_VERIFIER_VK_HASH as string;
-        this.ethProcessorVKHash = process.env.ETH_PROCESSOR_VK_HASH as string;
     
         if (!senderPrivateKeyBase58) errors.push('SENDER_PRIVATE_KEY is required');
-        if (!this.ethVerifierVkHash) errors.push('ETH_VERIFIER_VK_HASH is required');
-        if (!this.ethProcessorVKHash) errors.push('ETH_PROCESSOR_VK_HASH is required');
         
         if (!network) {
             errors.push('NETWORK is required');
@@ -150,16 +144,16 @@ export class MinaEthProcessorSubmitter {
 
             let disagree: string[] = [];
 
-            if (ethVerifierVkHash !== this.ethVerifierVkHash) {
-                disagree.push(`Computed ethVerifierVkHash '${ethVerifierVkHash}' disagrees with the one provided by environment variable ETH_VERIFIER_VK_HASH '${this.ethVerifierVkHash}'.`);
+            if (ethVerifierVkHash !== ethVerifierVkHash) {
+                disagree.push(`Computed ethVerifierVkHash '${ethVerifierVkHash}' disagrees with the one contained cached within this repository '${ethVerifierVkHash}'.`);
             }
 
-            if (ethProcessorVKHash !== this.ethProcessorVKHash) {
-                disagree.push(`Computed ethProcessorVKHash '${ethProcessorVKHash}' disagrees with the one provided by environment variable ETH_PROCESSOR_VK_HASH '${this.ethProcessorVKHash}'.`);
+            if (ethProcessorVKHash !== ethProcessorVKHash) {
+                disagree.push(`Computed ethProcessorVKHash '${ethProcessorVKHash}' disagrees with the one provided cached within this repository '${ethProcessorVKHash}'.`);
             }
 
             if (disagree.length) {
-                disagree.push('Refusing to start.');
+                disagree.push(`Refusing to start. Do you need to run 'npm run deploy' in the eth-processor repository and commit the changed?`);
                 const errStr = disagree.join('\n');
                 throw new Error(errStr);
             }
