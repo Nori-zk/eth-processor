@@ -12,7 +12,7 @@ import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
 import fs from 'fs';
 import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
 import { ethers } from 'ethers';
-import { PATH_TO_O1_PROOF, PATH_TO_SP1_PROOF } from './proofs.js';
+import { pathToO1Proof, pathToSp1Proof } from './proofs.js';
 
 const logger = new Logger('EthProcessorScript');
 
@@ -64,10 +64,10 @@ async function main() {
 
         // Process proof data
         const rawProof = await NodeProofLeft.fromJSON(
-            JSON.parse(fs.readFileSync(PATH_TO_O1_PROOF, 'utf8'))
+            JSON.parse(fs.readFileSync(pathToO1Proof, 'utf8'))
         );
         const ethSP1Proof = JSON.parse(
-            fs.readFileSync(PATH_TO_SP1_PROOF, 'utf8')
+            fs.readFileSync(pathToSp1Proof, 'utf8')
         ); // JK FIXME why is the proof coming from example file
 
         // Decode proof values
@@ -129,4 +129,7 @@ async function main() {
     }
 }
 
-main().catch(logger.error);
+main().catch((err) => {
+    logger.fatal(`Error in main function: ${String(err)}`);
+    process.exit(1);
+});

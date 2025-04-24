@@ -12,3 +12,4 @@ coverage
 # Never commit keys to Git!
 keys
 .env
+.env.nori-eth-processor

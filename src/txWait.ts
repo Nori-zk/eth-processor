@@ -37,6 +37,6 @@ export async function wait(
                 await new Promise((resolve) => setTimeout(resolve, intervalMs));
             } while (attempt <= maxAttempts);
             reject(new Error('Max attempts breached.'));
-        })().catch((error) => reject(error));
+        })().catch((err) => reject(err));
     });
 }
