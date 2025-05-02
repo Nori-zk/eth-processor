@@ -32,10 +32,13 @@ NETWORK=
 
 - **NETWORK**: specifies the target network (e.g., `mainnet`, `devnet`, `litenet`).
 
+## How to bake integrity hashes
+
+When you have modified your programs (EthProcessor or EthVerifier), or updated any public inputs you depend on from other repositories e.g. the proof-conversion / bridge-head public outputs then you must recompile your programs and update the integrity hashes via the following command `npm run bake-vk-hashes` which will update the `src/integrity/<o1js-eth-program-name>.VkHash.json` files with the new ZK programs verification key hashes. These are verified against at runtime when running `npm run deploy` or `npm run prove-and-submit` are invoked (or via using the `compileContracts` api method) and will throw if during the compilation process, the o1js cache was corrupted and yielded different compile program verification keys than what was expected.
 
 ## How to deploy (launch a new contract)
 
-Make sure to clear your 01js cache, if it exists already.
+Make sure to clear your o1js cache, if it exists already.
 Setup your `.env` file in the root directory. Set `MINA_RPC_NETWORK_URL=<url>`, `NETWORK=<mainnet or devnet or litenet>` and your `SENDER_PRIVATE_KEY`.
 
 Run `npm run deploy`. After which `.env.nori-eth-processor` will have been created in the root directory of the project.
@@ -55,11 +58,11 @@ Then finally: `npm run prove-and-submit`
 
 ## How to re-deploy (updating an existing contract)
 
-This is a work in progress. Make sure to clear your 01js cache.
+This is a work in progress. Make sure to clear your o1js cache.
 
 ## Troubleshooting
 
-There are constant problems with 01js's cache being stale. If you expect your projects vks have change, then remove the `~/.cache/o1js/` contents
+There are constant problems with o1js's cache being stale. If you expect your projects vks have change, then remove the `~/.cache/o1js/` contents
 before running `npm run deploy`.
 
 ## How to run tests
