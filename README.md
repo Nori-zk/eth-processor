@@ -48,7 +48,7 @@ ZKAPP_PRIVATE_KEY=...
 ZKAPP_ADDRESS=...
 ```
 
-Copy these to your `.env` file.
+Copy these to your `.env` file. Not avoid this step when running with NETWORK=lightnet.
 
 ## How to submit a new converter proof
 
