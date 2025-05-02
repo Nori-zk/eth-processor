@@ -34,7 +34,7 @@ NETWORK=
 
 ## How to Bake Integrity Hashes
 
-When you modify your programs (`EthProcessor` or `EthVerifier`), or update any public inputs/outputs due to changes in dependent zk programs (e.g., from `proof-conversion` or `bridge-head`), you must recompile your programs and update the integrity hashes.
+When you modify your programs (`EthProcessor` or `EthVerifier`), or update any public inputs/outputs due to changes in zk programs we are dependent upon (e.g., from `proof-conversion` or `bridge-head`), you must recompile your programs and update the integrity hashes.
 
 To do this, run:
 
@@ -72,7 +72,7 @@ Copy these to your `.env` file (Note omit this step when running with NETWORK=li
 
 ## How to submit a new converter proof
 
-Edit the `src/proofs/sp1Proof.json` file from the output you got from proof conversion (See [EthVerifier.ts](./src/EthVerifier.ts)). Note you only need to update `nodeVk.json` and `p0.json` if the proof conversion program VK has changed and sp1Proof.json needs to change for each and every new eth finality transition proof output. Each time your bridge head ZK / proof conversion ZK has changed you would need to redeploy the Mina smart contract with `npm run redeploy` (TODO).
+Edit the `src/proofs/sp1Proof.json` file from the output you got from proof conversion (See [EthVerifier.ts](./src/EthVerifier.ts) for details about extracting the correct details). Note you only need to update `nodeVk.json` and `p0.json` if the proof conversion program VK has changed and sp1Proof.json needs to change for each and every new eth finality transition proof output. Each time your bridge head ZK / proof conversion ZK has changed you would need to redeploy the Mina smart contract with `npm run redeploy` (TODO).
 
 Then finally: `npm run prove-and-submit`.
 
