@@ -46,6 +46,8 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         await wait(result.txId, process.env.MINA_RPC_NETWORK_URL!);
 
         logger.log('Awaited finalization succesfully.');
+
+        //process.exit(0);
     });
 
     test('should perform a series of proof submissions', async () => {
@@ -82,5 +84,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
             i++;
         }
+
+        //process.exit(0);
     });
 });

@@ -64,22 +64,10 @@ export class EthProcessor extends SmartContract {
         const executionStateRoot = ethProof.publicInput.executionStateRoot;
         const currentSlot = this.latestHead.getAndRequireEquals();
 
-        // Verification of slot progress.
-        proofHead.assertGreaterThan(
-            currentSlot,
-            'Proof head must be greater than current head.'
-        );
-
         // Convert the store hash's higher byte into a provable field.
         const prevStoreHashHighByteField = new Field(0);
         prevStoreHashHighByteField.add(
             ethProof.publicInput.prevStoreHash.bytes[0].value
-        );
-
-        // Verification of the previous store hash higher byte.
-        prevStoreHashHighByteField.assertEquals(
-            this.latestHeliusStoreInputHashHighByte.getAndRequireEquals(),
-            'The latest transition proofs\' input helios store hash higher byte, must match the contracts\' helios store hash higher byte.'
         );
 
         // Convert the store hash's lower 31 bytes into a provable field.
@@ -90,10 +78,22 @@ export class EthProcessor extends SmartContract {
                 .add(ethProof.publicInput.prevStoreHash.bytes[i].value);
         }
 
+        // Verification of the previous store hash higher byte.
+        prevStoreHashHighByteField.assertEquals(
+            this.latestHeliusStoreInputHashHighByte.getAndRequireEquals(),
+            "The latest transition proofs' input helios store hash higher byte, must match the contracts' helios store hash higher byte."
+        );
+
         // Verification of previous store hash lower bytes.
         prevStoreHashLowerBytesField.assertEquals(
             this.latestHeliusStoreInputHashLowerBytes.getAndRequireEquals(),
-            'The latest transition proofs\' input helios store hash lower bytes, must match the contracts\' helios store hash lower bytes.'
+            "The latest transition proofs' input helios store hash lower bytes, must match the contracts' helios store hash lower bytes."
+        );
+
+        // Verification of slot progress. Moved to the bottom to allow us to test hash mismatches do indeed yield validation errors.
+        proofHead.assertGreaterThan(
+            currentSlot,
+            'Proof head must be greater than current head.'
         );
 
         // Verify transition proof.
