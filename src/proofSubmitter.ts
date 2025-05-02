@@ -119,7 +119,7 @@ export class MinaEthProcessorSubmitter {
     async compileContracts() {
         try {
             logger.log('Compiling EthVerifier contract.');
-            const { verificationKey: vk } = await EthVerifier.compile(); // Future opt cache: Cache.FileSystemDefault,
+            const { verificationKey: vk } = await EthVerifier.compile();
 
             const calculatedEthVerifierVkHash = vk.hash.toString();
             logger.log(
@@ -127,7 +127,7 @@ export class MinaEthProcessorSubmitter {
             );
 
             logger.log('Compiling EthProcessor contract.');
-            const pVK = (await EthProcessor.compile()).verificationKey; // Future opt cache: Cache.FileSystemDefault,
+            const pVK = (await EthProcessor.compile()).verificationKey;
 
             // console.log(await EthProcessor.analyzeMethods()); // Used for debugging to make sure our contract compiles fully
 
@@ -155,7 +155,7 @@ export class MinaEthProcessorSubmitter {
 
             if (disagree.length) {
                 disagree.push(
-                    `Refusing to start. Do you need to run 'npm run deploy' in the eth-processor repository and commit the change?`
+                    `Refusing to start. Try clearing your o1js cache directory, typically found at '~/.cache/o1js'. Or do you need to run 'npm run bake-vk-hashes' in the eth-processor repository and commit the change?`
                 );
                 const errStr = disagree.join('\n');
                 throw new Error(errStr);

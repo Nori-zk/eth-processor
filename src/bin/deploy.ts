@@ -93,7 +93,7 @@ async function deploy() {
     const zkAppAddress = zkAppPrivateKey.toPublicKey();
     const zkAppAddressBase58 = zkAppAddress.toBase58();
 
-    logger.log(`Deployer address: ${deployerAccount.toBase58()}`);
+    logger.log(`Deployer address: '${deployerAccount.toBase58()}'.`);
     logger.log(`ZkApp contract address: '${zkAppAddressBase58}'.`);
 
     // Compile contracts
@@ -132,7 +132,7 @@ async function deploy() {
 
     if (disagree.length) {
         disagree.push(
-            `Refusing to start. Do you need to run 'npm run deploy' in the eth-processor repository and commit the change?`
+            `Refusing to start. Try clearing your o1js cache directory, typically found at '~/.cache/o1js'. Or do you need to run 'npm run bake-vk-hashes' in the eth-processor repository and commit the change?`
         );
         const errStr = disagree.join('\n');
         throw new Error(errStr);
