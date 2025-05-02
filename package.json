@@ -27,8 +27,10 @@
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --runInBand",
     "lint": "npx eslint src/* --fix",
     "eth": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules  build/src/EthScript.js",
-    "deploy": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules build/src/deploy.js",
-    "prove-and-submit": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules build/src/bin/proveAndSubmit.js"
+    "deploy": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules build/src/bin/deploy.js",
+    "prove-and-submit": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules build/src/bin/proveAndSubmit.js",
+    "bake-vk-hashes": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules build/src/bin/bakeVkHashes.js"
+
   },
   "devDependencies": {
     "@types/node": "^20.17.19",

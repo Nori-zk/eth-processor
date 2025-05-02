@@ -7,10 +7,8 @@ import {
     ZkProgram,
     Struct,
     UInt64,
-    Undefined,
     Field,
 } from 'o1js';
-
 import {
     FrC,
     NodeProofLeft,
@@ -64,6 +62,8 @@ const EthVerifier = ZkProgram({
 
                 // JK to swap in CI after contract gets updated and redeployed
                 // This is an sp1Proof.proof.Plonk.public_inputs[0]
+                // This can now be extracted from bridge head repo at location
+                // nori-elf/nori-sp1-helios-program.pi0.json and should be copied to this repository
                 const ethPlonkVK = FrC.from(
                     '334740129494505640197007047005908422460135655890865761118234574538022275533' //$programVK todo check ?
                 );

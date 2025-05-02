@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+import 'dotenv/config';
+// Other imports
 import {
     Mina,
     PrivateKey,
@@ -7,13 +10,13 @@ import {
     Cache,
 } from 'o1js';
 import { Logger, LogPrinter } from '@nori-zk/proof-conversion';
-import { EthProcessor } from './EthProcessor.js';
-import { EthVerifier } from './EthVerifier.js';
-// Load environment variables from .env file
-import 'dotenv/config';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
-import rootDir from './utils.js';
+import rootDir from '../utils.js';
+import { EthProcessor } from '../EthProcessor.js';
+import { EthVerifier } from '../EthVerifier.js';
+import { ethVerifierVkHash } from '../integrity/EthVerifier.VKHash.js';
+import { ethProcessorVkHash } from '../integrity/EthProcessor.VKHash.js';
 
 const logger = new Logger('Deploy');
 
@@ -61,45 +64,25 @@ const networkUrl =
     process.env.MINA_RPC_NETWORK_URL || 'http://localhost:3000/graphql'; // Should probably validate here the network type. FIXME
 const fee = Number(process.env.TX_FEE || 0.1) * 1e9; // in nanomina (1 billion = 1.0 mina)
 
-function writeSuccessDetailsToFiles(
-    zkAppAddressBase58: string,
-    ethVerifierVkHash: string,
-    ethProcessorVKHash: string
-) {
+function writeSuccessDetailsToEnvFileFile(zkAppAddressBase58: string) {
     // Write env file.
     const env = {
         ZKAPP_PRIVATE_KEY: zkAppPrivateKeyBase58,
-        ZKAPP_ADDRESS: zkAppAddressBase58
+        ZKAPP_ADDRESS: zkAppAddressBase58,
     };
     const envFileStr =
         Object.entries(env)
             .map(([key, value]) => `${key}=${value}`)
             .join('\n') + `\n`;
-    const envFileOutputPath = resolve(rootDir, '..', '..', '.env.nori-eth-processor');
+    const envFileOutputPath = resolve(
+        rootDir,
+        '..',
+        '..',
+        '.env.nori-eth-processor'
+    );
     logger.info(`Writing env file with the details: '${envFileOutputPath}'`);
-    writeFileSync(
-        envFileOutputPath,
-        envFileStr,
-        'utf8'
-    );
+    writeFileSync(envFileOutputPath, envFileStr, 'utf8');
     logger.log(`Wrote '${envFileOutputPath}' successfully.`);
-
-    // Write vks
-    const ethProcessorVkHashFileOutputPath = resolve(rootDir, '..', '..', 'src', 'vks', 'EthProcessor.VkHash.json');
-    const ethVerifierVkHashFileOutputPath = resolve(rootDir, '..', '..', 'src', 'vks', 'EthVerifier.VkHash.json');
-    logger.log(`Writing vks hashes to '${ethProcessorVkHashFileOutputPath}' and '${ethVerifierVkHashFileOutputPath}'`);
-    writeFileSync(
-        ethProcessorVkHashFileOutputPath,
-        `"${ethProcessorVKHash}"`,
-        'utf8'
-    );
-    writeFileSync(
-        ethVerifierVkHashFileOutputPath,
-        `"${ethVerifierVkHash}"`,
-        'utf8'
-    );
-    logger.log(`Wrote vks hashes to '${ethProcessorVkHashFileOutputPath}' and '${ethVerifierVkHashFileOutputPath}' successfully.`);
-
 }
 
 async function deploy() {
@@ -119,16 +102,41 @@ async function deploy() {
     logger.log('Compiling EthVerifier.');
     const vk = (await EthVerifier.compile({ cache: Cache.FileSystemDefault }))
         .verificationKey;
-    const ethVerifierVkHash = vk.hash.toString();
-    logger.log(`EthVerifier contract compiled vk: '${ethVerifierVkHash}'.`);
+    const calculatedEthVerifierVkHash = vk.hash.toString();
+    logger.log(`EthVerifier contract compiled vk: '${calculatedEthVerifierVkHash}'.`);
 
     // Compile processor
     const pVK = await EthProcessor.compile({
         cache: Cache.FileSystemDefault,
     });
     logger.log('Compiling EthProcessor.');
-    const ethProcessorVKHash = pVK.verificationKey.hash.toString();
-    logger.log(`EthProcessor contract compiled vk: '${ethProcessorVKHash}'.`);
+    const calculatedEthProcessorVKHash = pVK.verificationKey.hash.toString();
+    logger.log(`EthProcessor contract compiled vk: '${calculatedEthProcessorVKHash}'.`);
+
+    // Validation
+    logger.log('Verifying computed Vk hashes.');
+
+    let disagree: string[] = [];
+
+    if (calculatedEthVerifierVkHash !== ethVerifierVkHash) {
+        disagree.push(
+            `Computed ethVerifierVkHash '${calculatedEthVerifierVkHash}' disagrees with the one cached within this repository '${ethVerifierVkHash}'.`
+        );
+    }
+
+    if (calculatedEthProcessorVKHash !== ethProcessorVkHash) {
+        disagree.push(
+            `Computed ethProcessorVKHash '${calculatedEthProcessorVKHash}' disagrees with the one cached within this repository '${ethProcessorVkHash}'.`
+        );
+    }
+
+    if (disagree.length) {
+        disagree.push(
+            `Refusing to start. Do you need to run 'npm run deploy' in the eth-processor repository and commit the change?`
+        );
+        const errStr = disagree.join('\n');
+        throw new Error(errStr);
+    }
 
     // Configure Mina network
     const Network = Mina.Network({
@@ -162,7 +170,9 @@ async function deploy() {
     logger.log('Deployment successful!');
     logger.log(`Contract admin: '${currentAdmin?.toBase58()}'.`);
 
-    writeSuccessDetailsToFiles(zkAppAddressBase58, ethVerifierVkHash, ethProcessorVKHash);
+    writeSuccessDetailsToEnvFileFile(
+        zkAppAddressBase58
+    );
 }
 
 // Execute deployment

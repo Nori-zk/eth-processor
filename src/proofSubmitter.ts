@@ -1,23 +1,18 @@
-import { EthProcessor, EthProofType } from './EthProcessor.js';
-import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
 import { ethers } from 'ethers';
-import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
 import {
     AccountUpdate,
     Mina,
     PrivateKey,
-    PublicKey,
-    Cache,
     NetworkId,
     UInt64,
-    VerificationKey,
     fetchAccount,
-    checkZkappTransaction,
-    Account,
 } from 'o1js';
+import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
+import { EthProcessor, EthProofType } from './EthProcessor.js';
+import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
 import { CreateProofArgument } from './interfaces.js';
-import { ethVerifierVkHash } from './vks/EthVerifier.VKHash.js';
-import { ethProcessorVkHash } from './vks/EthProcessor.VKHash.js';
+import { ethVerifierVkHash } from './integrity/EthVerifier.VKHash.js';
+import { ethProcessorVkHash } from './integrity/EthProcessor.VKHash.js';
 
 const logger = new Logger('EthProcessorSubmitter');
 
@@ -107,7 +102,6 @@ export class MinaEthProcessorSubmitter {
         logger.log('Loaded constants from .env');
     }
 
-
     async networkSetUp() {
         logger.log('Setting up network');
         const networkUrl =
@@ -127,9 +121,9 @@ export class MinaEthProcessorSubmitter {
             logger.log('Compiling EthVerifier contract.');
             const { verificationKey: vk } = await EthVerifier.compile(); // Future opt cache: Cache.FileSystemDefault,
 
-            const calculateEthVerifierVkHash = vk.hash.toString();
+            const calculatedEthVerifierVkHash = vk.hash.toString();
             logger.log(
-                `Verifier contract vk hash compiled: '${calculateEthVerifierVkHash}'.`
+                `Verifier contract vk hash compiled: '${calculatedEthVerifierVkHash}'.`
             );
 
             logger.log('Compiling EthProcessor contract.');
@@ -137,24 +131,32 @@ export class MinaEthProcessorSubmitter {
 
             // console.log(await EthProcessor.analyzeMethods()); // Used for debugging to make sure our contract compiles fully
 
-            const calculateEthProcessorVKHash = pVK.hash.toString();
-            logger.log(`EthProcessor contract vk hash compiled: '${calculateEthProcessorVKHash}'.`);
+            const calculatedEthProcessorVKHash = pVK.hash.toString();
+            logger.log(
+                `EthProcessor contract vk hash compiled: '${calculatedEthProcessorVKHash}'.`
+            );
 
             // Validation
             logger.log('Verifying computed Vk hashes.');
 
             let disagree: string[] = [];
 
-            if (calculateEthVerifierVkHash !== ethVerifierVkHash) {
-                disagree.push(`Computed ethVerifierVkHash '${calculateEthVerifierVkHash}' disagrees with the one cached within this repository '${ethVerifierVkHash}'.`);
+            if (calculatedEthVerifierVkHash !== ethVerifierVkHash) {
+                disagree.push(
+                    `Computed ethVerifierVkHash '${calculatedEthVerifierVkHash}' disagrees with the one cached within this repository '${ethVerifierVkHash}'.`
+                );
             }
 
-            if (calculateEthProcessorVKHash !== ethProcessorVkHash) {
-                disagree.push(`Computed ethProcessorVKHash '${calculateEthProcessorVKHash}' disagrees with the one cached within this repository '${ethProcessorVkHash}'.`);
+            if (calculatedEthProcessorVKHash !== ethProcessorVkHash) {
+                disagree.push(
+                    `Computed ethProcessorVKHash '${calculatedEthProcessorVKHash}' disagrees with the one cached within this repository '${ethProcessorVkHash}'.`
+                );
             }
 
             if (disagree.length) {
-                disagree.push(`Refusing to start. Do you need to run 'npm run deploy' in the eth-processor repository and commit the change?`);
+                disagree.push(
+                    `Refusing to start. Do you need to run 'npm run deploy' in the eth-processor repository and commit the change?`
+                );
                 const errStr = disagree.join('\n');
                 throw new Error(errStr);
             }
@@ -180,7 +182,9 @@ export class MinaEthProcessorSubmitter {
         );
         logger.log('Deploy transaction created successfully. Proving...');
         await deployTx.prove();
-        logger.log('Transaction proved. Signing and sending the transaction...');
+        logger.log(
+            'Transaction proved. Signing and sending the transaction...'
+        );
         await deployTx
             .sign([this.senderPrivateKey, this.zkAppPrivateKey])
             .send()

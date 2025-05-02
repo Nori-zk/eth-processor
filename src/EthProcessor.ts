@@ -1,21 +1,18 @@
+import 'dotenv/config';
 import {
     Field,
     PrivateKey,
-    Provable,
     SmartContract,
     State,
     method,
     state,
     Poseidon,
     UInt64,
-    DeployArgs,
     PublicKey,
     Permissions,
-    UInt8,
 } from 'o1js';
-import { EthProof, Bytes32 } from './EthVerifier.js';
-import 'dotenv/config';
 import { Logger } from '@nori-zk/proof-conversion';
+import { EthProof, Bytes32 } from './EthVerifier.js';
 
 const logger = new Logger('EthProcessor');
 
