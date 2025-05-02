@@ -64,7 +64,7 @@ async function main() {
     // Create a temporary folder to compile the cache to, this is nessesary as the forceRecompile option
     // seems to be ignored.
     mkdirSync(ephemeralCacheDir, {recursive: true});
-    logger.log(`Created ephemeral caches directory for eth programs '${ephemeralCacheDir}'`);
+    logger.log(`Created an ephemeral build cache directory for eth programs '${ephemeralCacheDir}'`);
 
     // Compile verifier
     logger.log('Compiling EthVerifier.');
