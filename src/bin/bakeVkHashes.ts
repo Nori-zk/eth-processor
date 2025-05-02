@@ -81,12 +81,12 @@ async function main() {
     logger.log(`EthProcessor contract compiled vk: '${ethProcessorVKHash}'.`);
     // logger.log(`EthProcessor analyze methods output:\n${JSON.stringify(await EthProcessor.analyzeMethods())}`);
 
-    rmSync(ephemeralCacheDir);
+    rmSync(ephemeralCacheDir, {recursive: true});
     writeSuccessDetailsToJsonFiles(ethVerifierVkHash, ethProcessorVKHash);
 }
 
 main().catch((err) => {
     logger.fatal(`Main function had an error: ${String(err)}`);
-    rmSync(ephemeralCacheDir);
+    rmSync(ephemeralCacheDir, {recursive: true});
     process.exit(1);
 });
