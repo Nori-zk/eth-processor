@@ -32,9 +32,29 @@ NETWORK=
 
 - **NETWORK**: specifies the target network (e.g., `mainnet`, `devnet`, `litenet`).
 
-## How to bake integrity hashes
+## How to Bake Integrity Hashes
 
-When you have modified your programs (EthProcessor or EthVerifier), or updated any public inputs you depend on from other repositories e.g. the proof-conversion / bridge-head public outputs then you must recompile your programs and update the integrity hashes via the following command `npm run bake-vk-hashes` which will update the `src/integrity/<o1js-eth-program-name>.VkHash.json` files with the new ZK programs verification key hashes. These are verified against at runtime when running `npm run deploy` or `npm run prove-and-submit` are invoked (or via using the `compileContracts` api method) and will throw if during the compilation process, the o1js cache was corrupted and yielded different compile program verification keys than what was expected.
+When you modify your programs (`EthProcessor` or `EthVerifier`), or update any public inputs/outputs due to changes in dependent zk programs (e.g., from `proof-conversion` or `bridge-head`), you must recompile your programs and update the integrity hashes.
+
+To do this, run:
+
+```bash
+npm run bake-vk-hashes
+```
+
+This command regenerates and updates the verification key hashes in:
+
+```
+src/integrity/<o1js-eth-program-name>.VkHash.json
+```
+
+These hashes are checked at runtime during:
+
+- `npm run deploy`
+- `npm run prove-and-submit`
+- `compileContracts` (API method)
+
+If the o1js cache is corrupted or stale — resulting in mismatched verification keys — these commands will deliberately throw an error to prevent invalid or inconsistent program states.
 
 ## How to deploy (launch a new contract)
 
@@ -48,13 +68,13 @@ ZKAPP_PRIVATE_KEY=...
 ZKAPP_ADDRESS=...
 ```
 
-Copy these to your `.env` file. Not avoid this step when running with NETWORK=lightnet.
+Copy these to your `.env` file (Note omit this step when running with NETWORK=lightnet).
 
 ## How to submit a new converter proof
 
-Edit the `src/proofs/sp1Proof.json` file from the output you got from proof conversion (See [EthVerifier.ts](./src/EthVerifier.ts)). Note you only need to update `nodeVk.json` if the bridge head has ZK program VK has change, `p0.json` if the proof conversion program VK has changed and sp1Proof.json needs to change for each and every new eth transition proof output. Each time your bridge head ZK / proof conversion ZK has changed you would need to redeploy the Mina smart contract with `npm run deploy` (TODO).
+Edit the `src/proofs/sp1Proof.json` file from the output you got from proof conversion (See [EthVerifier.ts](./src/EthVerifier.ts)). Note you only need to update `nodeVk.json` and `p0.json` if the proof conversion program VK has changed and sp1Proof.json needs to change for each and every new eth finality transition proof output. Each time your bridge head ZK / proof conversion ZK has changed you would need to redeploy the Mina smart contract with `npm run redeploy` (TODO).
 
-Then finally: `npm run prove-and-submit`
+Then finally: `npm run prove-and-submit`.
 
 ## How to re-deploy (updating an existing contract)
 
@@ -62,8 +82,7 @@ This is a work in progress. Make sure to clear your o1js cache.
 
 ## Troubleshooting
 
-There are constant problems with o1js's cache being stale. If you expect your projects vks have change, then remove the `~/.cache/o1js/` contents
-before running `npm run deploy`.
+You may experience problems with o1js's cache being stale. If you expect your projects vks have change, then remove the `~/.cache/o1js/` contents before running `npm run deploy`.
 
 ## How to run tests
 
