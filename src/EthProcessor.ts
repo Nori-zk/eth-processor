@@ -14,7 +14,9 @@ import {
     Struct,
 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
-import { EthProof, Bytes32, EthOutput } from './EthVerifier.js';
+import { EthProof, StoreHash } from './EthVerifier.js';
+import { storeHashBytesToProvableFields } from './storeHashToProvableFields.js';
+import { Bytes32 } from './types.js';
 
 const logger = new Logger('EthProcessor');
 
@@ -36,14 +38,14 @@ class VerificationKey extends Struct({
 
 class DeployArgsWithStoreHash extends Struct({
     verificationKey: VerificationKey,
-    storeHash: EthOutput,
+    storeHash: StoreHash,
 }) {}
 
-class DeployArgsWithoutEthOutput extends Struct({
+class DeployArgsWithoutStoreHash extends Struct({
     verificationKey: VerificationKey,
 }) {}
 
-export type EthProcessorDeployArgs = DeployArgsWithStoreHash | DeployArgsWithoutEthOutput;
+export type EthProcessorDeployArgs = DeployArgsWithStoreHash | DeployArgsWithoutStoreHash;
 
 export class EthProcessor extends SmartContract {
     @state(Field) verifiedStateRoot = State<Field>(); // todo make PackedString
@@ -64,8 +66,10 @@ export class EthProcessor extends SmartContract {
             ...Permissions.default(),
         });
     }
-    //TODO deploy (for redeployments) ?
+
     async deploy(args: EthProcessorDeployArgs) {
+        // Could we deploy with a proof?
+
         const { verificationKey } = args;
         super.deploy(
             { verificationKey }
@@ -75,7 +79,7 @@ export class EthProcessor extends SmartContract {
             this.latestHeliusStoreInputHashLowerBytes.set(args.storeHash.storeHashLowerBytesField);
         }
 
-        //this.verifiedStateRoot.set(Field(2));
+        //this.verifiedStateRoot.set(Field(2)); // Need to prove this otherwise its bootstrapped in an invalid state
     }
 
     // @method async init() {
@@ -94,19 +98,7 @@ export class EthProcessor extends SmartContract {
             Provable.log('Current slot', currentSlot);
         });
 
-        // Convert the store hash's higher byte into a provable field.
-        let prevStoreHashHighByteField = new Field(0);
-        prevStoreHashHighByteField = prevStoreHashHighByteField.add(
-            ethProof.publicInput.prevStoreHash.bytes[0].value
-        );
-
-        // Convert the store hash's lower 31 bytes into a provable field.
-        let prevStoreHashLowerBytesField = new Field(0);
-        for (let i = 1; i < 32; i++) {
-            prevStoreHashLowerBytesField = prevStoreHashLowerBytesField
-                .mul(256)
-                .add(ethProof.publicInput.prevStoreHash.bytes[i].value);
-        }
+        const {storeHashHighByteField: prevStoreHashHighByteField, storeHashLowerBytesField: prevStoreHashLowerBytesField} = storeHashBytesToProvableFields(ethProof.publicInput.prevStoreHash);
 
         // Verification of the previous store hash higher byte.
         prevStoreHashHighByteField.assertEquals(

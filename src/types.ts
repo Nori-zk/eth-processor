@@ -1,4 +1,4 @@
-import { Field, Struct } from 'o1js';
+import { Bytes, Field } from 'o1js';
 import { EthVerifier } from './EthVerifier';
 
 export interface Proof {
@@ -52,3 +52,5 @@ export type VerificationKey = {
     data: string;
     hash: Field;
 }
+
+export class Bytes32 extends Bytes(32) {}

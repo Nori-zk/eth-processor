@@ -18,6 +18,9 @@ new LogPrinter('[TestEthProcessor]', [
     'verbose',
 ]);
 
+// Fix testing network to lightnet
+process.env.NETWORK='lightnet';
+
 const logger = new Logger('JestEthProcessor');
 
 describe('MinaEthProcessorSubmittor Integration Test', () => {
@@ -37,14 +40,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         // Get proof
         const proofArgument = buildExampleProofCreateArgument();
 
-        // If local deploy contracts.
-        //if (proofSubmitter.testMode === true) {
+        // Deploy contract
         const decoded = decodeProof(proofArgument.sp1PlonkProof);
-        decoded.startSyncCommitteeHash.bytes;
-
-
         await proofSubmitter.deployContract(decoded.prevStoreHash);
-        //}
 
         // Build proof.
         const ethProof = await proofSubmitter.createProof(proofArgument);
@@ -56,8 +54,6 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         await wait(result.txId, process.env.MINA_RPC_NETWORK_URL!);
 
         logger.log('Awaited finalization succesfully.');
-
-        //process.exit(0);
     });
 
     test('should perform a series of proof submissions', async () => {
@@ -73,15 +69,10 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         // Compile contracts.
         await proofSubmitter.compileContracts();
 
-        // If local deploy contracts.
-        //if (proofSubmitter.testMode === true) {
-
-        //}
-
         // Get proofs
         const seriesExamples = buildExampleProofSeriesCreateArguments();
 
-        // Deploy
+        // Deploy contract
         const decoded = decodeProof(seriesExamples[0].sp1PlonkProof);
         await proofSubmitter.deployContract(decoded.prevStoreHash);
 
@@ -103,8 +94,6 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
             i++;
         }
-
-        //process.exit(0);
     });
 
     test('should invoke a hash validation issue when we skip transition proofs', async () => {
@@ -120,11 +109,7 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         // Compile contracts.
         await proofSubmitter.compileContracts();
 
-        // If local deploy contracts.
-        //if (proofSubmitter.testMode === true) {
-
-        //}
-
+        // Get proof
         const seriesExamples = buildExampleProofSeriesCreateArguments();
 
         // Deploy contract

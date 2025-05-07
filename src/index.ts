@@ -4,7 +4,7 @@ import {
     ConvertedProofVkData,
     PlonkProof,
     ConvertedProof,
-} from './interfaces.js';
+} from './types.js';
 import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
 import { wait } from './txWait.js';
 export {

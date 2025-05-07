@@ -1,5 +1,5 @@
 import { Field } from 'o1js';
-import { Bytes32, EthOutput } from './EthVerifier';
+import { Bytes32 } from './types';
 
 export function storeHashBytesToProvableFields(storeHash: Bytes32) {
     // Convert the store hash's higher byte into a provable field.

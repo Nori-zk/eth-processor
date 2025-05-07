@@ -61,14 +61,14 @@ If the o1js cache is corrupted or stale — resulting in mismatched verification
 Make sure to clear your o1js cache, if it exists already.
 Setup your `.env` file in the root directory. Set `MINA_RPC_NETWORK_URL=<url>`, `NETWORK=<mainnet or devnet or litenet>` and your `SENDER_PRIVATE_KEY`.
 
-Run `npm run deploy`. After which `.env.nori-eth-processor` will have been created in the root directory of the project.
+Run `npm run deploy <storeHashInHex>`. After which `.env.nori-eth-processor` will have been created in the root directory of the project.
 
 ```
 ZKAPP_PRIVATE_KEY=...
 ZKAPP_ADDRESS=...
 ```
 
-Copy these to your `.env` file (Note omit this step when running with NETWORK=lightnet).
+Copy these to your `.env` file (Note omit this step when testing).
 
 ## How to submit a new converter proof
 
@@ -78,7 +78,23 @@ Then finally: `npm run prove-and-submit`.
 
 ## How to re-deploy (updating an existing contract)
 
-This is a work in progress. Make sure to clear your o1js cache.
+If you need to update your store hash and verification key:
+
+Run `npm run bake-vk-hashes`
+Run `npm run deploy <storeHashInHex>`. After which `.env.nori-eth-processor` will have been created in the root directory of the project.
+
+If you only need to update your verification key:
+
+Run `npm run bake-vk-hashes`
+Run `npm run deploy`. After which `.env.nori-eth-processor` will have been created in the root directory of the project.
+
+```
+ZKAPP_PRIVATE_KEY=...
+ZKAPP_ADDRESS=...
+```
+
+Copy `.env.nori-eth-processor` values to your `.env` file (Note omit this step when testing).
+
 
 ## Troubleshooting
 

@@ -1,20 +1,18 @@
-import { ethers } from 'ethers';
 import {
     AccountUpdate,
     Mina,
     PrivateKey,
     NetworkId,
-    UInt64,
     fetchAccount,
 } from 'o1js';
 import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
-import { EthProcessor, EthProcessorDeployArgs, EthProofType } from './EthProcessor.js';
-import { EthVerifier, EthInput, Bytes32, EthOutput } from './EthVerifier.js';
-import { CreateProofArgument, VerificationKey } from './interfaces.js';
-import { ethVerifierVkHash } from './integrity/EthVerifier.VKHash.js';
-import { ethProcessorVkHash } from './integrity/EthProcessor.VKHash.js';
+import { EthProcessor, EthProofType } from './EthProcessor.js';
+import { EthVerifier, EthInput, StoreHash } from './EthVerifier.js';
+import { CreateProofArgument, VerificationKey } from './types.js';
 import { decodeProof } from './proofDecoder.js';
 import { storeHashBytesToProvableFields } from './storeHashToProvableFields.js';
+import { compileAndVerifyContracts } from './compileAndVerifyContracts.js';
+import { Bytes32 } from './types.js';
 
 const logger = new Logger('EthProcessorSubmitter');
 
@@ -46,12 +44,8 @@ export class MinaEthProcessorSubmitter {
             );
         } else {
             this.network = network as NetworkId;
-            //this.testMode = network === 'lightnet';
         }
 
-        /*if (this.network && !this.testMode) {
-            
-        }*/
         if (!zkAppPrivateKeyBase58) {
             errors.push(
                 'ZKAPP_PRIVATE_KEY is required when not in lightnet mode'
@@ -64,51 +58,11 @@ export class MinaEthProcessorSubmitter {
 
         this.senderPrivateKey = PrivateKey.fromBase58(senderPrivateKeyBase58);
         this.zkAppPrivateKey = PrivateKey.fromBase58(zkAppPrivateKeyBase58);
-
-        /*if (this.testMode) {
-            this.zkAppPrivateKey = PrivateKey.random();
-        } else {
-            
-        }*/
-
         this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
         this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
 
         logger.log('Loaded constants from .env');
     }
-
-    /*constructor(private type: 'plonk' = 'plonk') {
-        const senderPrivateKeyBase58 = process.env.SENDER_PRIVATE_KEY;
-
-        if (!senderPrivateKeyBase58) {
-            throw 'SENDER_PRIVATE_KEY env var is not define exiting';
-        }
-        this.senderPrivateKey = PrivateKey.fromBase58(senderPrivateKeyBase58);
-        const network = process.env.NETWORK;
-        if (!network || !['devnet', 'mainnet', 'lightnet'].includes(network)) {
-            throw 'NETWORK env var is not defined or wrong, options are devnet, mainnet, lightnet';
-        }
-        this.network = network as NetworkId;
-        this.testMode = network === 'lightnet';
-
-        if (this.testMode && !process.env.ZKAPP_PRIVATE_KEY) {
-            // This makes sure the local tests work dont remove it
-            this.zkAppPrivateKey = PrivateKey.random();
-            this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
-        } else {
-            const zkAppPrivateKeyBase58 = process.env.ZKAPP_PRIVATE_KEY;
-            if (!zkAppPrivateKeyBase58) {
-                throw 'ZKAPP_PRIVATE_KEY env var is not define exiting';
-            }
-            this.zkAppPrivateKey = PrivateKey.fromBase58(zkAppPrivateKeyBase58);
-            this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
-            //this.zkApp = new EthProcessor(PublicKey.fromBase58(ZKAPP_ADDRESS));
-        }
-
-        this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
-
-        logger.log('Loaded constants from .env');
-    }*/
 
     async networkSetUp() {
         logger.log('Setting up network');
@@ -124,57 +78,10 @@ export class MinaEthProcessorSubmitter {
         logger.log('Finished Mina network setup.');
     }
 
-    async compileContracts() { // 
-        try {
-            logger.log('Compiling EthVerifier contract.');
-            this.ethVerifierVerificationKey = (await EthVerifier.compile()).verificationKey;
-
-            const calculatedEthVerifierVkHash = this.ethVerifierVerificationKey.hash.toString();
-            logger.log(
-                `Verifier contract vk hash compiled: '${calculatedEthVerifierVkHash}'.`
-            );
-
-            logger.log('Compiling EthProcessor contract.');
-            this.ethProcessorVerificationKey = (await EthProcessor.compile()).verificationKey;
-
-            // console.log(await EthProcessor.analyzeMethods()); // Used for debugging to make sure our contract compiles fully
-
-            const calculatedEthProcessorVKHash = this.ethProcessorVerificationKey.hash.toString();
-            logger.log(
-                `EthProcessor contract vk hash compiled: '${calculatedEthProcessorVKHash}'.`
-            );
-
-            // Validation
-            logger.log('Verifying computed Vk hashes.');
-
-            let disagree: string[] = [];
-
-            if (calculatedEthVerifierVkHash !== ethVerifierVkHash) {
-                disagree.push(
-                    `Computed ethVerifierVkHash '${calculatedEthVerifierVkHash}' disagrees with the one cached within this repository '${ethVerifierVkHash}'.`
-                );
-            }
-
-            if (calculatedEthProcessorVKHash !== ethProcessorVkHash) {
-                disagree.push(
-                    `Computed ethProcessorVKHash '${calculatedEthProcessorVKHash}' disagrees with the one cached within this repository '${ethProcessorVkHash}'.`
-                );
-            }
-
-            if (disagree.length) {
-                disagree.push(
-                    `Refusing to start. Try clearing your o1js cache directory, typically found at '~/.cache/o1js'. Or do you need to run 'npm run bake-vk-hashes' in the eth-processor repository and commit the change?`
-                );
-                const errStr = disagree.join('\n');
-                throw new Error(errStr);
-            }
-
-            logger.log('Contracts compiled.');
-        } catch (err) {
-            console.log((err as any).stack);
-            logger.error(`Error compiling contracts:\n${String(err)}`);
-            throw err;
-        }
+    async compileContracts() {
+        const {ethVerifierVerificationKey, ethProcessorVerificationKey} = await compileAndVerifyContracts(logger);
+        this.ethVerifierVerificationKey = ethVerifierVerificationKey;
+        this.ethProcessorVerificationKey = ethProcessorVerificationKey;
     }
 
     async deployContract(storeHash: Bytes32) {
@@ -185,7 +92,7 @@ export class MinaEthProcessorSubmitter {
                 AccountUpdate.fundNewAccount(
                     this.senderPrivateKey.toPublicKey()
                 );
-                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: new EthOutput({...storeHashBytesToProvableFields(storeHash) })});
+                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: new StoreHash({...storeHashBytesToProvableFields(storeHash) })});
             }
         );
         logger.log('Deploy transaction created successfully. Proving...');
@@ -213,10 +120,9 @@ export class MinaEthProcessorSubmitter {
 
             const ethSP1Proof = sp1PlonkProof;
 
-            // Decode proof values.
-            logger.log('Decoding converted proof.');
+            logger.log('Decoding converted proof and creating verification inputs.');
 
-            // Create input for verification.
+            // Decode proof values and create input for verification.
             const input = new EthInput(decodeProof(ethSP1Proof));
 
             // Compute and verify proof.
@@ -253,7 +159,7 @@ export class MinaEthProcessorSubmitter {
 
             const tx = await updateTx.sign([this.senderPrivateKey]).send();
             logger.log(
-                `Transaction sent ${this.network}` // this.testMode ? ' to testMode.' : '.'
+                `Transaction sent to '${this.network}'.`
             );
             const txId = tx.data!.sendZkapp.zkapp.id;
             const txHash = tx.data!.sendZkapp.zkapp.hash;

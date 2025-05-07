@@ -18,8 +18,9 @@ import {
 import { bridgeHeadNoriSP1HeliosProgramPi0 } from './integrity/BridgeHead.NoriSP1HeliosProgram.pi0.js';
 import { proofConversionSP1ToPlonkPO2 } from './integrity/ProofConversion.sp1ToPlonk.po2.js';
 import { proofConversionSP1ToPlonkVkData } from './integrity/ProofConversion.sp1ToPlonk.vkData.js';
+import { storeHashBytesToProvableFields } from './storeHashToProvableFields.js';
+import { Bytes32 } from './types.js';
 
-class Bytes32 extends Bytes(32) {}
 
 // sol! {
 //     struct ProofOutputs {
@@ -46,14 +47,14 @@ class EthInput extends Struct({
     prevStoreHash: Bytes32.provable,
     storeHash: Bytes32.provable,
 }) {}
-export class EthOutput extends Struct({
+export class StoreHash extends Struct({
     storeHashHighByteField: Field,
     storeHashLowerBytesField: Field,
 }) {}
 const EthVerifier = ZkProgram({
     name: 'EthVerifier',
     publicInput: EthInput,
-    publicOutput: EthOutput,
+    publicOutput: StoreHash,
     methods: {
         compute: {
             privateInputs: [NodeProofLeft],
@@ -63,14 +64,10 @@ const EthVerifier = ZkProgram({
                 // This is an sp1Proof.proof.Plonk.public_inputs[0]
                 // This can now be extracted from bridge head repo at location
                 // nori-elf/nori-sp1-helios-program.pi0.json and should be copied to this repository
-                const ethPlonkVK = FrC.from(
-                    bridgeHeadNoriSP1HeliosProgramPi0
-                );
+                const ethPlonkVK = FrC.from(bridgeHeadNoriSP1HeliosProgramPi0);
 
                 // p0 = proofConversionOutput.proofData.publicOutput[2] // hash of publicOutput of sp1
-                const ethNodeVk = Field.from(
-                    proofConversionSP1ToPlonkPO2
-                );
+                const ethNodeVk = Field.from(proofConversionSP1ToPlonkPO2);
 
                 // Verification of proof conversion
                 // vk = proofConversionOutput.vkData
@@ -118,29 +115,24 @@ const EthVerifier = ZkProgram({
 
                 piDigest.assertEquals(proof.publicOutput.rightOut);
 
-                // Store hash high byte
-                let storeHashHighByteField = new Field(0);
-
-                storeHashHighByteField = storeHashHighByteField.add(input.storeHash.bytes[0].value); // budget of 31 bytes.... slot is 8 bytes (u64),
-
-                // Store hash lower 31 bytes
-                let storeHashLowerBytesField = new Field(0);
-
-                for (let i = 1; i < 32; i++) {
-                    storeHashLowerBytesField = storeHashLowerBytesField
-                        .mul(256)
-                        .add(input.storeHash.bytes[i].value);
-                }
+                const { storeHashHighByteField, storeHashLowerBytesField } =
+                    storeHashBytesToProvableFields(input.storeHash);
 
                 Provable.asProver(() => {
                     Provable.log('Proof input store has values were:');
                     Provable.log(input.storeHash.bytes[0].value);
-                    Provable.log(input.storeHash.bytes.slice(1, 33).map(b => b.value));
-                    Provable.log('Public outputs created:', storeHashHighByteField, storeHashLowerBytesField);
+                    Provable.log(
+                        input.storeHash.bytes.slice(1, 33).map((b) => b.value)
+                    );
+                    Provable.log(
+                        'Public outputs created:',
+                        storeHashHighByteField,
+                        storeHashLowerBytesField
+                    );
                 });
 
                 return {
-                    publicOutput: new EthOutput({
+                    publicOutput: new StoreHash({
                         storeHashHighByteField,
                         storeHashLowerBytesField,
                     }),
@@ -158,4 +150,4 @@ const padUInt64To32Bytes = (num: UInt64): UInt8[] => {
     return [...unpadded, ...Array(24).fill(UInt8.from(0))].reverse();
 };
 
-export { EthVerifier, EthProof, EthInput, Bytes32 };
+export { EthVerifier, EthProof, EthInput };

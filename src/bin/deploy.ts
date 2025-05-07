@@ -7,16 +7,16 @@ import {
     AccountUpdate,
     NetworkId,
     fetchAccount,
-    Cache,
 } from 'o1js';
 import { Logger, LogPrinter } from '@nori-zk/proof-conversion';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import rootDir from '../utils.js';
 import { EthProcessor } from '../EthProcessor.js';
-import { EthVerifier } from '../EthVerifier.js';
-import { ethVerifierVkHash } from '../integrity/EthVerifier.VKHash.js';
-import { ethProcessorVkHash } from '../integrity/EthProcessor.VKHash.js';
+import { compileAndVerifyContracts } from '../compileAndVerifyContracts.js';
+import { Bytes32 } from '../types.js';
+import { StoreHash } from '../EthVerifier.js';
+import { storeHashBytesToProvableFields } from '../storeHashToProvableFields.js';
 
 const logger = new Logger('Deploy');
 
@@ -64,6 +64,10 @@ const networkUrl =
     process.env.MINA_RPC_NETWORK_URL || 'http://localhost:3000/graphql'; // Should probably validate here the network type. FIXME
 const fee = Number(process.env.TX_FEE || 0.1) * 1e9; // in nanomina (1 billion = 1.0 mina)
 
+// Get cli argument
+const storeHashHex = process.argv[2];
+const storeHash = storeHashHex ? Bytes32.fromHex(storeHashHex) : undefined;
+
 function writeSuccessDetailsToEnvFileFile(zkAppAddressBase58: string) {
     // Write env file.
     const env = {
@@ -96,47 +100,8 @@ async function deploy() {
     logger.log(`Deployer address: '${deployerAccount.toBase58()}'.`);
     logger.log(`ZkApp contract address: '${zkAppAddressBase58}'.`);
 
-    // Compile contracts
-
-    // Compile verifier
-    logger.log('Compiling EthVerifier.');
-    const vk = (await EthVerifier.compile({ cache: Cache.FileSystemDefault }))
-        .verificationKey;
-    const calculatedEthVerifierVkHash = vk.hash.toString();
-    logger.log(`EthVerifier contract compiled vk: '${calculatedEthVerifierVkHash}'.`);
-
-    // Compile processor
-    const pVK = await EthProcessor.compile({
-        cache: Cache.FileSystemDefault,
-    });
-    logger.log('Compiling EthProcessor.');
-    const calculatedEthProcessorVKHash = pVK.verificationKey.hash.toString();
-    logger.log(`EthProcessor contract compiled vk: '${calculatedEthProcessorVKHash}'.`);
-
-    // Validation
-    logger.log('Verifying computed Vk hashes.');
-
-    let disagree: string[] = [];
-
-    if (calculatedEthVerifierVkHash !== ethVerifierVkHash) {
-        disagree.push(
-            `Computed ethVerifierVkHash '${calculatedEthVerifierVkHash}' disagrees with the one cached within this repository '${ethVerifierVkHash}'.`
-        );
-    }
-
-    if (calculatedEthProcessorVKHash !== ethProcessorVkHash) {
-        disagree.push(
-            `Computed ethProcessorVKHash '${calculatedEthProcessorVKHash}' disagrees with the one cached within this repository '${ethProcessorVkHash}'.`
-        );
-    }
-
-    if (disagree.length) {
-        disagree.push(
-            `Refusing to start. Try clearing your o1js cache directory, typically found at '~/.cache/o1js'. Or do you need to run 'npm run bake-vk-hashes' in the eth-processor repository and commit the change?`
-        );
-        const errStr = disagree.join('\n');
-        throw new Error(errStr);
-    }
+    // Compile and verify
+    const {ethProcessorVerificationKey} = await compileAndVerifyContracts(logger);
 
     // Configure Mina network
     const Network = Mina.Network({
@@ -154,7 +119,14 @@ async function deploy() {
         { fee, sender: deployerAccount },
         async () => {
             AccountUpdate.fundNewAccount(deployerAccount);
-            //await zkApp.deploy(); //FIXME
+            if (storeHash) {
+                logger.log('Deploying with an updated storeHash and verification key.');
+                await zkApp.deploy({verificationKey: ethProcessorVerificationKey, storeHash: new StoreHash({...storeHashBytesToProvableFields(storeHash) })});
+            }
+            else {
+                logger.log('Deploying with an updated verification key.');
+                await zkApp.deploy({verificationKey: ethProcessorVerificationKey });
+            }
         }
     );
 

@@ -1,7 +1,7 @@
-import { PlonkProof } from './interfaces';
+import { PlonkProof } from './types';
 import { ethers } from 'ethers';
-import { Bytes32 } from './EthVerifier.js';
 import { UInt64 } from 'o1js';
+import { Bytes32 } from './types.js';
 
 export function decodeProof(ethSP1Proof: PlonkProof) {
     const defaultEncoder = ethers.AbiCoder.defaultAbiCoder();
