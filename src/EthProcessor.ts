@@ -10,6 +10,7 @@ import {
     UInt64,
     PublicKey,
     Permissions,
+    Provable,
 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
 import { EthProof, Bytes32 } from './EthVerifier.js';
@@ -64,16 +65,20 @@ export class EthProcessor extends SmartContract {
         const executionStateRoot = ethProof.publicInput.executionStateRoot;
         const currentSlot = this.latestHead.getAndRequireEquals();
 
+        Provable.asProver(() => {
+            Provable.log('Current slot', currentSlot);
+        });
+
         // Convert the store hash's higher byte into a provable field.
-        const prevStoreHashHighByteField = new Field(0);
-        prevStoreHashHighByteField.add(
+        let prevStoreHashHighByteField = new Field(0);
+        prevStoreHashHighByteField = prevStoreHashHighByteField.add(
             ethProof.publicInput.prevStoreHash.bytes[0].value
         );
 
         // Convert the store hash's lower 31 bytes into a provable field.
-        const prevStoreHashLowerBytesField = new Field(0);
+        let prevStoreHashLowerBytesField = new Field(0);
         for (let i = 1; i < 32; i++) {
-            prevStoreHashLowerBytesField
+            prevStoreHashLowerBytesField = prevStoreHashLowerBytesField
                 .mul(256)
                 .add(ethProof.publicInput.prevStoreHash.bytes[i].value);
         }
@@ -84,11 +89,27 @@ export class EthProcessor extends SmartContract {
             "The latest transition proofs' input helios store hash higher byte, must match the contracts' helios store hash higher byte."
         );
 
+        Provable.asProver(() => {
+            Provable.log(
+                'ethProof.prevStoreHashHighByteField vs this.latestHeliusStoreInputHashHighByte',
+                prevStoreHashHighByteField.toString(),
+                this.latestHeliusStoreInputHashHighByte.get().toString()
+            );
+        });
+
         // Verification of previous store hash lower bytes.
         prevStoreHashLowerBytesField.assertEquals(
             this.latestHeliusStoreInputHashLowerBytes.getAndRequireEquals(),
             "The latest transition proofs' input helios store hash lower bytes, must match the contracts' helios store hash lower bytes."
         );
+
+        Provable.asProver(() => {
+            Provable.log(
+                'ethProof.prevStoreHashLowerBytesField vs this.latestHeliusStoreInputHashLowerBytes',
+                prevStoreHashLowerBytesField.toString(),
+                this.latestHeliusStoreInputHashLowerBytes.get().toString()
+            );
+        });
 
         // Verification of slot progress. Moved to the bottom to allow us to test hash mismatches do indeed yield validation errors.
         proofHead.assertGreaterThan(

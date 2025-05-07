@@ -119,18 +119,25 @@ const EthVerifier = ZkProgram({
                 piDigest.assertEquals(proof.publicOutput.rightOut);
 
                 // Store hash high byte
-                const storeHashHighByteField = new Field(0);
+                let storeHashHighByteField = new Field(0);
 
-                storeHashHighByteField.add(input.storeHash.bytes[0].value); // budget of 31 bytes.... slot is 8 bytes (u64),
+                storeHashHighByteField = storeHashHighByteField.add(input.storeHash.bytes[0].value); // budget of 31 bytes.... slot is 8 bytes (u64),
 
                 // Store hash lower 31 bytes
-                const storeHashLowerBytesField = new Field(0);
+                let storeHashLowerBytesField = new Field(0);
 
                 for (let i = 1; i < 32; i++) {
-                    storeHashLowerBytesField
+                    storeHashLowerBytesField = storeHashLowerBytesField
                         .mul(256)
                         .add(input.storeHash.bytes[i].value);
                 }
+
+                Provable.asProver(() => {
+                    Provable.log('Proof input store has values were:');
+                    Provable.log(input.storeHash.bytes[0].value);
+                    Provable.log(input.storeHash.bytes.slice(1, 33).map(b => b.value));
+                    Provable.log('Public outputs created:', storeHashHighByteField, storeHashLowerBytesField);
+                });
 
                 return {
                     publicOutput: new EthOutput({
