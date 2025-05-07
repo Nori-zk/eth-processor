@@ -154,7 +154,7 @@ async function deploy() {
         { fee, sender: deployerAccount },
         async () => {
             AccountUpdate.fundNewAccount(deployerAccount);
-            await zkApp.deploy();
+            //await zkApp.deploy(); //FIXME
         }
     );
 

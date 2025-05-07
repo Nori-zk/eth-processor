@@ -11,9 +11,10 @@ import {
     PublicKey,
     Permissions,
     Provable,
+    Struct,
 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
-import { EthProof, Bytes32 } from './EthVerifier.js';
+import { EthProof, Bytes32, EthOutput } from './EthVerifier.js';
 
 const logger = new Logger('EthProcessor');
 
@@ -27,6 +28,22 @@ export const adminPrivateKey = PrivateKey.fromBase58(adminPrivateKeyBase58);
 export const adminPublicKey = adminPrivateKey.toPublicKey();
 
 export class EthProofType extends EthProof {}
+
+class VerificationKey extends Struct({
+    data: String,
+    hash: Field,
+}) {}
+
+class DeployArgsWithStoreHash extends Struct({
+    verificationKey: VerificationKey,
+    storeHash: EthOutput,
+}) {}
+
+class DeployArgsWithoutEthOutput extends Struct({
+    verificationKey: VerificationKey,
+}) {}
+
+export type EthProcessorDeployArgs = DeployArgsWithStoreHash | DeployArgsWithoutEthOutput;
 
 export class EthProcessor extends SmartContract {
     @state(Field) verifiedStateRoot = State<Field>(); // todo make PackedString
@@ -48,10 +65,18 @@ export class EthProcessor extends SmartContract {
         });
     }
     //TODO deploy (for redeployments) ?
-    // async deploy(args: DeployArgs) {
-    //   super.deploy(args);
-    //   this.verifiedStateRoot.set(Field(2));
-    // }
+    async deploy(args: EthProcessorDeployArgs) {
+        const { verificationKey } = args;
+        super.deploy(
+            { verificationKey }
+        );
+        if ('storeHash' in args) {
+            this.latestHeliusStoreInputHashHighByte.set(args.storeHash.storeHashHighByteField);
+            this.latestHeliusStoreInputHashLowerBytes.set(args.storeHash.storeHashLowerBytesField);
+        }
+
+        //this.verifiedStateRoot.set(Field(2));
+    }
 
     // @method async init() {
     //   this.account.provedState.getAndRequireEquals();

@@ -5,6 +5,8 @@ import {
 } from './constructExampleProofs.js';
 import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
 import { wait } from './txWait.js';
+import { PrivateKey } from 'o1js';
+import { decodeProof } from './proofDecoder.js';
 
 new LogPrinter('[TestEthProcessor]', [
     'log',
@@ -20,6 +22,9 @@ const logger = new Logger('JestEthProcessor');
 
 describe('MinaEthProcessorSubmittor Integration Test', () => {
     test('should run the proof submission process correctly', async () => {
+        // Generate a random contract key
+        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(PrivateKey.random());
+
         // Construct a MinaEthProcessorSubmittor
         const proofSubmitter = new MinaEthProcessorSubmitter();
 
@@ -29,15 +34,20 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         // Compile contracts.
         await proofSubmitter.compileContracts();
 
+        // Get proof
+        const proofArgument = buildExampleProofCreateArgument();
+
         // If local deploy contracts.
-        if (proofSubmitter.testMode === true) {
-            await proofSubmitter.deployContract();
-        }
+        //if (proofSubmitter.testMode === true) {
+        const decoded = decodeProof(proofArgument.sp1PlonkProof);
+        decoded.startSyncCommitteeHash.bytes;
+
+
+        await proofSubmitter.deployContract(decoded.prevStoreHash);
+        //}
 
         // Build proof.
-        const ethProof = await proofSubmitter.createProof(
-            buildExampleProofCreateArgument()
-        );
+        const ethProof = await proofSubmitter.createProof(proofArgument);
 
         // Submit proof.
         const result = await proofSubmitter.submit(ethProof.proof);
@@ -51,6 +61,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
     });
 
     test('should perform a series of proof submissions', async () => {
+        // Generate a random contract key
+        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(PrivateKey.random());
+
         // Construct a MinaEthProcessorSubmittor
         const proofSubmitter = new MinaEthProcessorSubmitter();
 
@@ -61,12 +74,18 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         await proofSubmitter.compileContracts();
 
         // If local deploy contracts.
-        if (proofSubmitter.testMode === true) {
-            await proofSubmitter.deployContract();
-        }
+        //if (proofSubmitter.testMode === true) {
+
+        //}
+
+        // Get proofs
+        const seriesExamples = buildExampleProofSeriesCreateArguments();
+
+        // Deploy
+        const decoded = decodeProof(seriesExamples[0].sp1PlonkProof);
+        await proofSubmitter.deployContract(decoded.prevStoreHash);
 
         // Build and submit proofs
-        const seriesExamples = buildExampleProofSeriesCreateArguments();
         let i = 1;
         for (const example of seriesExamples) {
             logger.log(
@@ -89,6 +108,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
     });
 
     test('should invoke a hash validation issue when we skip transition proofs', async () => {
+        // Generate a random contract key
+        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(PrivateKey.random());
+
         // Construct a MinaEthProcessorSubmittor
         const proofSubmitter = new MinaEthProcessorSubmitter();
 
@@ -99,13 +121,17 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         await proofSubmitter.compileContracts();
 
         // If local deploy contracts.
-        if (proofSubmitter.testMode === true) {
-            await proofSubmitter.deployContract();
-        }
+        //if (proofSubmitter.testMode === true) {
 
-        // Build and submit proofs
+        //}
+
         const seriesExamples = buildExampleProofSeriesCreateArguments();
 
+        // Deploy contract
+        const decoded = decodeProof(seriesExamples[0].sp1PlonkProof);
+        await proofSubmitter.deployContract(decoded.prevStoreHash);
+
+        // Build and submit proofs
         logger.log(
             `Running Example 1 -------------------------------------------------------`
         );
@@ -124,7 +150,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
             `Running Example 3 -------------------------------------------------------`
         );
 
-        logger.verbose(`Expecting a failure in the next test as we skip a transition proof the input hash for the 3rd example, wont be the same as the output hash from the 1st example`);
+        logger.verbose(
+            `Expecting a failure in the next test as we skip a transition proof the input hash for the 3rd example, wont be the same as the output hash from the 1st example`
+        );
 
         // Create proof 2
         const ethProof2 = await proofSubmitter.createProof(seriesExamples[2]);

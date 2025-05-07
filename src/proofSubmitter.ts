@@ -8,11 +8,13 @@ import {
     fetchAccount,
 } from 'o1js';
 import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
-import { EthProcessor, EthProofType } from './EthProcessor.js';
-import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
-import { CreateProofArgument } from './interfaces.js';
+import { EthProcessor, EthProcessorDeployArgs, EthProofType } from './EthProcessor.js';
+import { EthVerifier, EthInput, Bytes32, EthOutput } from './EthVerifier.js';
+import { CreateProofArgument, VerificationKey } from './interfaces.js';
 import { ethVerifierVkHash } from './integrity/EthVerifier.VKHash.js';
 import { ethProcessorVkHash } from './integrity/EthProcessor.VKHash.js';
+import { decodeProof } from './proofDecoder.js';
+import { storeHashBytesToProvableFields } from './storeHashToProvableFields.js';
 
 const logger = new Logger('EthProcessorSubmitter');
 
@@ -21,55 +23,61 @@ export class MinaEthProcessorSubmitter {
     senderPrivateKey: PrivateKey;
     zkAppPrivateKey: PrivateKey;
     network: NetworkId;
-    // Execution environment flags.
-    proofsEnabled: boolean;
-    testMode: boolean;
     txFee: number;
+    ethProcessorVerificationKey: VerificationKey;
+    ethVerifierVerificationKey: VerificationKey;
 
-    /*constructor(private type: 'plonk' = 'plonk') {
+    constructor(private type: 'plonk' = 'plonk') {
         logger.info(`🛠 MinaEthProcessorSubmitter constructor called!`);
         const errors: string[] = [];
-        
+
         const senderPrivateKeyBase58 = process.env.SENDER_PRIVATE_KEY as string;
         const network = process.env.NETWORK as string;
         const zkAppPrivateKeyBase58 = process.env.ZKAPP_PRIVATE_KEY as string;
-    
-        if (!senderPrivateKeyBase58) errors.push('SENDER_PRIVATE_KEY is required');
-        
+
+        if (!senderPrivateKeyBase58)
+            errors.push('SENDER_PRIVATE_KEY is required');
+
         if (!network) {
             errors.push('NETWORK is required');
         } else if (!['devnet', 'mainnet', 'lightnet'].includes(network)) {
-            errors.push(`NETWORK must be one of: devnet, mainnet, lightnet (got "${network}")`);
+            errors.push(
+                `NETWORK must be one of: devnet, mainnet, lightnet (got "${network}")`
+            );
         } else {
             this.network = network as NetworkId;
-            this.testMode = network === 'lightnet';
+            //this.testMode = network === 'lightnet';
         }
-    
-        if (this.network && !this.testMode) {
-            if (!zkAppPrivateKeyBase58) {
-                errors.push('ZKAPP_PRIVATE_KEY is required when not in lightnet mode');
-            }
+
+        /*if (this.network && !this.testMode) {
+            
+        }*/
+        if (!zkAppPrivateKeyBase58) {
+            errors.push(
+                'ZKAPP_PRIVATE_KEY is required when not in lightnet mode'
+            );
         }
-    
+
         if (errors.length > 0) {
             throw `Configuration errors:\n- ${errors.join('\n- ')}`;
         }
-    
+
         this.senderPrivateKey = PrivateKey.fromBase58(senderPrivateKeyBase58);
-        
-        if (this.testMode) {
+        this.zkAppPrivateKey = PrivateKey.fromBase58(zkAppPrivateKeyBase58);
+
+        /*if (this.testMode) {
             this.zkAppPrivateKey = PrivateKey.random();
         } else {
-            this.zkAppPrivateKey = PrivateKey.fromBase58(zkAppPrivateKeyBase58);
-        }
-        
+            
+        }*/
+
         this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
         this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
-    
-        logger.log('Loaded constants from .env');
-    }*/
 
-    constructor(private type: 'plonk' = 'plonk') {
+        logger.log('Loaded constants from .env');
+    }
+
+    /*constructor(private type: 'plonk' = 'plonk') {
         const senderPrivateKeyBase58 = process.env.SENDER_PRIVATE_KEY;
 
         if (!senderPrivateKeyBase58) {
@@ -100,7 +108,7 @@ export class MinaEthProcessorSubmitter {
         this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
 
         logger.log('Loaded constants from .env');
-    }
+    }*/
 
     async networkSetUp() {
         logger.log('Setting up network');
@@ -116,22 +124,22 @@ export class MinaEthProcessorSubmitter {
         logger.log('Finished Mina network setup.');
     }
 
-    async compileContracts() {
+    async compileContracts() { // 
         try {
             logger.log('Compiling EthVerifier contract.');
-            const { verificationKey: vk } = await EthVerifier.compile();
+            this.ethVerifierVerificationKey = (await EthVerifier.compile()).verificationKey;
 
-            const calculatedEthVerifierVkHash = vk.hash.toString();
+            const calculatedEthVerifierVkHash = this.ethVerifierVerificationKey.hash.toString();
             logger.log(
                 `Verifier contract vk hash compiled: '${calculatedEthVerifierVkHash}'.`
             );
 
             logger.log('Compiling EthProcessor contract.');
-            const pVK = (await EthProcessor.compile()).verificationKey;
+            this.ethProcessorVerificationKey = (await EthProcessor.compile()).verificationKey;
 
             // console.log(await EthProcessor.analyzeMethods()); // Used for debugging to make sure our contract compiles fully
 
-            const calculatedEthProcessorVKHash = pVK.hash.toString();
+            const calculatedEthProcessorVKHash = this.ethProcessorVerificationKey.hash.toString();
             logger.log(
                 `EthProcessor contract vk hash compiled: '${calculatedEthProcessorVKHash}'.`
             );
@@ -169,7 +177,7 @@ export class MinaEthProcessorSubmitter {
         }
     }
 
-    async deployContract() {
+    async deployContract(storeHash: Bytes32) {
         logger.log('Creating deploy update transaction.');
         const deployTx = await Mina.transaction(
             { sender: this.senderPrivateKey.toPublicKey(), fee: this.txFee },
@@ -177,7 +185,7 @@ export class MinaEthProcessorSubmitter {
                 AccountUpdate.fundNewAccount(
                     this.senderPrivateKey.toPublicKey()
                 );
-                await this.zkApp.deploy();
+                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: new EthOutput({...storeHashBytesToProvableFields(storeHash) })});
             }
         );
         logger.log('Deploy transaction created successfully. Proving...');
@@ -207,38 +215,9 @@ export class MinaEthProcessorSubmitter {
 
             // Decode proof values.
             logger.log('Decoding converted proof.');
-            const defaultEncoder = ethers.AbiCoder.defaultAbiCoder();
-            const decoded = defaultEncoder.decode(
-                [
-                    'bytes32',
-                    'bytes32',
-                    'bytes32',
-                    'uint64',
-                    'bytes32',
-                    'uint64',
-                    'bytes32',
-                    'bytes32',
-                    'bytes32',
-                    'bytes32',
-                ],
-                new Uint8Array(
-                    Buffer.from(ethSP1Proof.public_values.buffer.data)
-                )
-            );
 
             // Create input for verification.
-            const input = new EthInput({
-                executionStateRoot: Bytes32.fromHex(decoded[0].slice(2)),
-                newHeader: Bytes32.fromHex(decoded[1].slice(2)),
-                nextSyncCommitteeHash: Bytes32.fromHex(decoded[2].slice(2)),
-                newHead: UInt64.from(decoded[3]),
-                prevHeader: Bytes32.fromHex(decoded[4].slice(2)),
-                prevHead: UInt64.from(decoded[5]),
-                syncCommitteeHash: Bytes32.fromHex(decoded[6].slice(2)),
-                startSyncCommitteeHash: Bytes32.fromHex(decoded[7].slice(2)),
-                prevStoreHash: Bytes32.fromHex(decoded[8].slice(2)),
-                storeHash: Bytes32.fromHex(decoded[9].slice(2)),
-            });
+            const input = new EthInput(decodeProof(ethSP1Proof));
 
             // Compute and verify proof.
             logger.log('Computing proof.');
@@ -274,7 +253,7 @@ export class MinaEthProcessorSubmitter {
 
             const tx = await updateTx.sign([this.senderPrivateKey]).send();
             logger.log(
-                `Transaction sent${this.testMode ? ' to testMode.' : '.'}`
+                `Transaction sent ${this.network}` // this.testMode ? ' to testMode.' : '.'
             );
             const txId = tx.data!.sendZkapp.zkapp.id;
             const txHash = tx.data!.sendZkapp.zkapp.hash;

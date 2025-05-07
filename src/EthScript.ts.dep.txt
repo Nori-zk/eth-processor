@@ -56,7 +56,7 @@ async function main() {
 
         const deployTx = await Mina.transaction(deployerAccount, async () => {
             AccountUpdate.fundNewAccount(deployerAccount);
-            await zkApp.deploy();
+            //await zkApp.deploy(); //FIXME
         });
         await deployTx.prove();
         await deployTx.sign([deployerKey, zkAppPrivateKey]).send();

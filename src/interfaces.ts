@@ -1,3 +1,4 @@
+import { Field, Struct } from 'o1js';
 import { EthVerifier } from './EthVerifier';
 
 export interface Proof {
@@ -46,3 +47,8 @@ export interface CreateProofArgument {
 export type EthVerifierComputeOutput = Awaited<
     ReturnType<typeof EthVerifier.compute>
 >;
+
+export type VerificationKey = {
+    data: string;
+    hash: Field;
+}

@@ -46,7 +46,7 @@ class EthInput extends Struct({
     prevStoreHash: Bytes32.provable,
     storeHash: Bytes32.provable,
 }) {}
-class EthOutput extends Struct({
+export class EthOutput extends Struct({
     storeHashHighByteField: Field,
     storeHashLowerBytesField: Field,
 }) {}
@@ -151,10 +151,11 @@ const EthVerifier = ZkProgram({
 });
 
 const EthProof = ZkProgram.Proof(EthVerifier);
-export { EthVerifier, EthProof, EthInput, Bytes32 };
 
 const padUInt64To32Bytes = (num: UInt64): UInt8[] => {
     let unpadded: UInt8[] = [];
     unpadded = wordToBytes(num.toFields()[0]);
     return [...unpadded, ...Array(24).fill(UInt8.from(0))].reverse();
 };
+
+export { EthVerifier, EthProof, EthInput, Bytes32 };
