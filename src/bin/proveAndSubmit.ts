@@ -38,11 +38,6 @@ async function main() {
     // Compile contracts.
     await proofSubmitter.compileContracts();
 
-    // If local deploy contracts. // We seem to get a fetch account issue when this is commented out but I think it should work on litenet. FIXME and remove this.
-    /*if (proofSubmitter.testMode === true) {
-        await proofSubmitter.deployContract();
-    }*/
-
     // Build proof.
     const ethProof = await proofSubmitter.createProof(
         buildProofCreateArgument()

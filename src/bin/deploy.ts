@@ -1,13 +1,7 @@
 // Load environment variables from .env file
 import 'dotenv/config';
 // Other imports
-import {
-    Mina,
-    PrivateKey,
-    AccountUpdate,
-    NetworkId,
-    fetchAccount,
-} from 'o1js';
+import { Mina, PrivateKey, AccountUpdate, NetworkId, fetchAccount } from 'o1js';
 import { Logger, LogPrinter } from '@nori-zk/proof-conversion';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
@@ -42,6 +36,7 @@ let zkAppPrivateKeyBase58 =
     process.env.ZKAPP_PRIVATE_KEY ?? PrivateKey.random().toBase58();
 if (zkAppPrivateKeyWasCreated) {
     logger.log(`Created a new ZKAppPrivate key.`);
+    process.env.ZKAPP_PRIVATE_KEY = zkAppPrivateKeyBase58;
 }
 
 // Validate
@@ -63,7 +58,8 @@ const fee = Number(process.env.TX_FEE || 0.1) * 1e9; // in nanomina (1 billion =
 
 // Get cli argument
 const storeHashHex = process.argv[2];
-const storeHash = storeHashHex ? Bytes32.fromHex(storeHashHex) : undefined;
+console.log('storeHashHex', storeHashHex);
+const storeHash = storeHashHex ? Bytes32.fromHex(storeHashHex) : undefined; // No 0x
 
 function writeSuccessDetailsToEnvFileFile(zkAppAddressBase58: string) {
     // Write env file.
@@ -97,15 +93,17 @@ async function deploy() {
     logger.log(`Deployer address: '${deployerAccount.toBase58()}'.`);
     logger.log(`ZkApp contract address: '${zkAppAddressBase58}'.`);
 
-    // Compile and verify
-    const {ethProcessorVerificationKey} = await compileAndVerifyContracts(logger);
-
     // Configure Mina network
     const Network = Mina.Network({
         networkId: 'testnet' as NetworkId,
         mina: networkUrl,
     });
     Mina.setActiveInstance(Network);
+
+    // Compile and verify
+    const { ethProcessorVerificationKey } = await compileAndVerifyContracts(
+        logger
+    );
 
     // Initialize contract
     const zkApp = new EthProcessor(zkAppAddress);
@@ -117,16 +115,23 @@ async function deploy() {
         async () => {
             AccountUpdate.fundNewAccount(deployerAccount);
             if (storeHash) {
-                logger.log('Deploying with an updated storeHash and verification key.');
-                await zkApp.deploy({verificationKey: ethProcessorVerificationKey, storeHash: StoreHash.fromBytes32(storeHash)});
-            }
-            else {
+                logger.log(
+                    'Deploying with an updated storeHash and verification key.'
+                );
+                await zkApp.deploy({
+                    verificationKey: ethProcessorVerificationKey,
+                    storeHash: StoreHash.fromBytes32(storeHash),
+                });
+            } else {
                 logger.log('Deploying with an updated verification key.');
-                await zkApp.deploy({verificationKey: ethProcessorVerificationKey });
+                await zkApp.deploy({
+                    verificationKey: ethProcessorVerificationKey,
+                });
             }
         }
     );
 
+    logger.log('Proving transaction');
     await txn.prove();
     const signedTx = txn.sign([deployerKey, zkAppPrivateKey]);
     logger.log('Sending transaction...');
@@ -139,9 +144,7 @@ async function deploy() {
     logger.log('Deployment successful!');
     logger.log(`Contract admin: '${currentAdmin?.toBase58()}'.`);
 
-    writeSuccessDetailsToEnvFileFile(
-        zkAppAddressBase58
-    );
+    writeSuccessDetailsToEnvFileFile(zkAppAddressBase58);
 }
 
 // Execute deployment
