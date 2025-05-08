@@ -145,4 +145,6 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         // Submit proof 2.
         await expect(proofSubmitter.submit(ethProof2.proof)).rejects.toThrow();
     });
+
+    // TODO add integration test for redeploy FIXME
 });

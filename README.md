@@ -65,6 +65,13 @@ Run `npm run deploy <storeHashInHex>`. The `<storeHashInHex>` must match the `in
 
 ```
 ZKAPP_PRIVATE_KEY=...
+Make sure to clear your o1js cache, if it exists already.
+Setup your `.env` file in the root directory. Set `MINA_RPC_NETWORK_URL=<url>`, `NETWORK=<mainnet or devnet or litenet>` and your `SENDER_PRIVATE_KEY`.
+
+Run `npm run deploy <storeHashInHex>`. The `<storeHashInHex>` must match the `input_store_hash` of the first store you expect as a checkpoint. After which `.env.nori-eth-processor` will have been created in the root directory of the project. You can find sensible values by running the bridge head and inspecting the checkpoint you wish the start from the proof output message directory of `sp1-helios-proof-messages/<file-with-slot-height>.json` finding the `input_store_hash` and using that as the `<storeHashInHex>` but ommiting the `0x` prefix.
+
+```
+ZKAPP_PRIVATE_KEY=...
 ZKAPP_ADDRESS=...
 ```
 
@@ -80,7 +87,7 @@ Each time the bridge head ZK, proof conversion ZK, EthProcessor, or EthVerifier 
 
 Then finally: `npm run prove-and-submit`.
 
-## How to re-deploy (updating an existing contract)
+## How to re-deploy (updating an existing contract - WIP)
 
 The verification key used in the deploy/redeploy command is computed from the stored zk programs directly but validated against the
 integrity hashes before one is allowed to deploy / prove-and-submit.
