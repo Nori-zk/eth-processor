@@ -61,7 +61,7 @@ If the o1js cache is corrupted or stale — resulting in mismatched verification
 Make sure to clear your o1js cache, if it exists already.
 Setup your `.env` file in the root directory. Set `MINA_RPC_NETWORK_URL=<url>`, `NETWORK=<mainnet or devnet or litenet>` and your `SENDER_PRIVATE_KEY`.
 
-Run `npm run deploy <storeHashInHex>`. After which `.env.nori-eth-processor` will have been created in the root directory of the project.
+Run `npm run deploy <storeHashInHex>`. The `<storeHashInHex>` must match the `input_store_hash` of the first store you expect as a checkpoint. After which `.env.nori-eth-processor` will have been created in the root directory of the project. You can find sensible values by running the bridge head and inspecting the checkpoint you wish the start from the proof output message directory of `sp1-helios-proof-messages/<file-with-slot-height>.json` finding the `input_store_hash` and using that as the `<storeHashInHex>` but ommiting the `0x` prefix.
 
 ```
 ZKAPP_PRIVATE_KEY=...
@@ -72,11 +72,18 @@ Copy these to your `.env` file.
 
 ## How to submit a new converter proof
 
-Edit the `src/proofs/sp1Proof.json` file from the output you got from proof conversion (See [EthVerifier.ts](./src/EthVerifier.ts) for details about extracting the correct details). Note you only need to update `nodeVk.json` and `p0.json` if the proof conversion program VK has changed and sp1Proof.json needs to change for each and every new eth finality transition proof output. Each time your bridge head ZK / proof conversion ZK has changed you would need to redeploy the Mina smart contract with `npm run redeploy` (TODO).
+Edit the `src/proofs/sp1Proof.json` file using the output retrieved from the bridge head within the `sp1-helios-proofs` directory. Convert this proof via the `proof-conversion` repository using the `sp1ToPlonk` command. Then, update `src/proofs/p0.json` with the converted proof data retrieved from the output of the proof conversion (`<proof-data-output>.proofData`).
+
+Note: You only need to update `nodeVk.json` from the output of the proof conversion if the proof conversion program’s VK has changed.
+
+Each time the bridge head ZK, proof conversion ZK, EthProcessor, or EthVerifier changes, you must redeploy the Mina smart contract with `npm run deploy` after baking in your new VK hashes via `npm run bake-vk-hashes`.
 
 Then finally: `npm run prove-and-submit`.
 
 ## How to re-deploy (updating an existing contract)
+
+The verification key used in the deploy/redeploy command is computed from the stored zk programs directly but validated against the
+integrity hashes before one is allowed to deploy / prove-and-submit.
 
 If you need to update your store hash and verification key:
 
