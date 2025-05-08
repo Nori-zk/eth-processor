@@ -118,12 +118,16 @@ Obtain your SENDER_PRIVATE_KEY environment variable:
 6. Put `NETWORK=lightnet` in your `.env` file.
 
 ```sh
-npm run test # all tests
+npm run test # all tests (hangs due to multiple instances of o1js deps)
 npm run test -- -t "should perform a series of proof submissions" # run a specific test
 npm run testw # watch mode
 ```
 
-Note tests can hang after a 3rd round of proof computation. Particularly when running multiple tests. Try running them one by one like `npm run test --t <testName>` if this this is happening to you.
+Note tests can hang after a 3rd round of proof computation. Particularly when running multiple tests within the same context. Try running them one by one like `npm run test --t <testName>` if this this is happening to you. Or use the command below which mitigates the issue.
+
+```sh
+npm run test-ci # Runs a series of tests, as a set of processes with forceExit after each (mitigation for now). 
+```
 
 ## How to run coverage
 

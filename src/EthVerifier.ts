@@ -113,7 +113,7 @@ const EthVerifier = ZkProgram({
                 const storeHash = StoreHash.fromBytes32(input.storeHash);
 
                 Provable.asProver(() => {
-                    Provable.log('Proof input store has values were:');
+                    Provable.log('Proof input store hash values were:');
                     Provable.log(input.storeHash.bytes[0].value);
                     Provable.log(
                         input.storeHash.bytes.slice(1, 33).map((b) => b.value)
