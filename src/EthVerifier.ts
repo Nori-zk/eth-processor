@@ -18,8 +18,7 @@ import {
 import { bridgeHeadNoriSP1HeliosProgramPi0 } from './integrity/BridgeHead.NoriSP1HeliosProgram.pi0.js';
 import { proofConversionSP1ToPlonkPO2 } from './integrity/ProofConversion.sp1ToPlonk.po2.js';
 import { proofConversionSP1ToPlonkVkData } from './integrity/ProofConversion.sp1ToPlonk.vkData.js';
-import { storeHashBytesToProvableFields } from './storeHashToProvableFields.js';
-import { Bytes32 } from './types.js';
+import { Bytes32, StoreHash } from './types.js';
 
 
 // sol! {
@@ -46,10 +45,6 @@ class EthInput extends Struct({
     startSyncCommitteeHash: Bytes32.provable,
     prevStoreHash: Bytes32.provable,
     storeHash: Bytes32.provable,
-}) {}
-export class StoreHash extends Struct({
-    storeHashHighByteField: Field,
-    storeHashLowerBytesField: Field,
 }) {}
 const EthVerifier = ZkProgram({
     name: 'EthVerifier',
@@ -114,9 +109,8 @@ const EthVerifier = ZkProgram({
                 );
 
                 piDigest.assertEquals(proof.publicOutput.rightOut);
-
-                const { storeHashHighByteField, storeHashLowerBytesField } =
-                    storeHashBytesToProvableFields(input.storeHash);
+                
+                const storeHash = StoreHash.fromBytes32(input.storeHash);
 
                 Provable.asProver(() => {
                     Provable.log('Proof input store has values were:');
@@ -126,16 +120,13 @@ const EthVerifier = ZkProgram({
                     );
                     Provable.log(
                         'Public outputs created:',
-                        storeHashHighByteField,
-                        storeHashLowerBytesField
+                        storeHash.highByteField,
+                        storeHash.lowerBytesField
                     );
                 });
 
                 return {
-                    publicOutput: new StoreHash({
-                        storeHashHighByteField,
-                        storeHashLowerBytesField,
-                    }),
+                    publicOutput: storeHash,
                 };
             },
         },

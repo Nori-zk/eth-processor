@@ -7,12 +7,10 @@ import {
 } from 'o1js';
 import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
 import { EthProcessor, EthProofType } from './EthProcessor.js';
-import { EthVerifier, EthInput, StoreHash } from './EthVerifier.js';
+import { EthVerifier, EthInput } from './EthVerifier.js';
 import { CreateProofArgument, VerificationKey } from './types.js';
-import { decodeProof } from './proofDecoder.js';
-import { storeHashBytesToProvableFields } from './storeHashToProvableFields.js';
-import { compileAndVerifyContracts } from './compileAndVerifyContracts.js';
-import { Bytes32 } from './types.js';
+import { compileAndVerifyContracts, decodeProof } from './utils.js';
+import { Bytes32, StoreHash } from './types.js';
 
 const logger = new Logger('EthProcessorSubmitter');
 
@@ -92,7 +90,7 @@ export class MinaEthProcessorSubmitter {
                 AccountUpdate.fundNewAccount(
                     this.senderPrivateKey.toPublicKey()
                 );
-                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: new StoreHash({...storeHashBytesToProvableFields(storeHash) })});
+                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: StoreHash.fromBytes32(storeHash)});
             }
         );
         logger.log('Deploy transaction created successfully. Proving...');

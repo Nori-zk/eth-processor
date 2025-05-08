@@ -11,12 +11,9 @@ import {
 import { Logger, LogPrinter } from '@nori-zk/proof-conversion';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
-import rootDir from '../utils.js';
+import { rootDir, compileAndVerifyContracts } from '../utils.js';
 import { EthProcessor } from '../EthProcessor.js';
-import { compileAndVerifyContracts } from '../compileAndVerifyContracts.js';
-import { Bytes32 } from '../types.js';
-import { StoreHash } from '../EthVerifier.js';
-import { storeHashBytesToProvableFields } from '../storeHashToProvableFields.js';
+import { Bytes32, StoreHash } from '../types.js';
 
 const logger = new Logger('Deploy');
 
@@ -121,7 +118,7 @@ async function deploy() {
             AccountUpdate.fundNewAccount(deployerAccount);
             if (storeHash) {
                 logger.log('Deploying with an updated storeHash and verification key.');
-                await zkApp.deploy({verificationKey: ethProcessorVerificationKey, storeHash: new StoreHash({...storeHashBytesToProvableFields(storeHash) })});
+                await zkApp.deploy({verificationKey: ethProcessorVerificationKey, storeHash: StoreHash.fromBytes32(storeHash)});
             }
             else {
                 logger.log('Deploying with an updated verification key.');

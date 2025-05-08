@@ -5,7 +5,7 @@ import { randomBytes } from 'crypto';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { EthVerifier } from '../EthVerifier.js';
 import { EthProcessor } from '../EthProcessor.js';
-import rootDir from '../utils.js';
+import { rootDir } from '../utils.js';
 
 new LogPrinter('[NoriEthProcessor]', [
     'log',

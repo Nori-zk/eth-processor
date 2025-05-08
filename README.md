@@ -68,7 +68,7 @@ ZKAPP_PRIVATE_KEY=...
 ZKAPP_ADDRESS=...
 ```
 
-Copy these to your `.env` file (Note omit this step when testing).
+Copy these to your `.env` file.
 
 ## How to submit a new converter proof
 
@@ -93,8 +93,7 @@ ZKAPP_PRIVATE_KEY=...
 ZKAPP_ADDRESS=...
 ```
 
-Copy `.env.nori-eth-processor` values to your `.env` file (Note omit this step when testing).
-
+Copy `.env.nori-eth-processor` values to your `.env`.
 
 ## Troubleshooting
 
@@ -117,7 +116,7 @@ npm run test -- -t "should perform a series of proof submissions" # run a specif
 npm run testw # watch mode
 ```
 
-Note tests can hang after a 3rd round of proof computation. Try running them one by one like `npm run test --t <testName>` if this this is happening to you.
+Note tests can hang after a 3rd round of proof computation. Particularly when running multiple tests. Try running them one by one like `npm run test --t <testName>` if this this is happening to you.
 
 ## How to run coverage
 

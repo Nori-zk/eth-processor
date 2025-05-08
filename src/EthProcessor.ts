@@ -14,9 +14,8 @@ import {
     Struct,
 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
-import { EthProof, StoreHash } from './EthVerifier.js';
-import { storeHashBytesToProvableFields } from './storeHashToProvableFields.js';
-import { Bytes32 } from './types.js';
+import { EthProof } from './EthVerifier.js';
+import { Bytes32, StoreHash } from './types.js';
 
 const logger = new Logger('EthProcessor');
 
@@ -75,8 +74,8 @@ export class EthProcessor extends SmartContract {
             { verificationKey }
         );
         if ('storeHash' in args) {
-            this.latestHeliusStoreInputHashHighByte.set(args.storeHash.storeHashHighByteField);
-            this.latestHeliusStoreInputHashLowerBytes.set(args.storeHash.storeHashLowerBytesField);
+            this.latestHeliusStoreInputHashHighByte.set(args.storeHash.highByteField);
+            this.latestHeliusStoreInputHashLowerBytes.set(args.storeHash.lowerBytesField);
         }
 
         //this.verifiedStateRoot.set(Field(2)); // Need to prove this otherwise its bootstrapped in an invalid state
@@ -98,10 +97,10 @@ export class EthProcessor extends SmartContract {
             Provable.log('Current slot', currentSlot);
         });
 
-        const {storeHashHighByteField: prevStoreHashHighByteField, storeHashLowerBytesField: prevStoreHashLowerBytesField} = storeHashBytesToProvableFields(ethProof.publicInput.prevStoreHash);
+        const prevStoreHash = StoreHash.fromBytes32(ethProof.publicInput.prevStoreHash);
 
         // Verification of the previous store hash higher byte.
-        prevStoreHashHighByteField.assertEquals(
+        prevStoreHash.highByteField.assertEquals(
             this.latestHeliusStoreInputHashHighByte.getAndRequireEquals(),
             "The latest transition proofs' input helios store hash higher byte, must match the contracts' helios store hash higher byte."
         );
@@ -109,13 +108,13 @@ export class EthProcessor extends SmartContract {
         Provable.asProver(() => {
             Provable.log(
                 'ethProof.prevStoreHashHighByteField vs this.latestHeliusStoreInputHashHighByte',
-                prevStoreHashHighByteField.toString(),
+                prevStoreHash.highByteField.toString(),
                 this.latestHeliusStoreInputHashHighByte.get().toString()
             );
         });
 
         // Verification of previous store hash lower bytes.
-        prevStoreHashLowerBytesField.assertEquals(
+        prevStoreHash.lowerBytesField.assertEquals(
             this.latestHeliusStoreInputHashLowerBytes.getAndRequireEquals(),
             "The latest transition proofs' input helios store hash lower bytes, must match the contracts' helios store hash lower bytes."
         );
@@ -123,7 +122,7 @@ export class EthProcessor extends SmartContract {
         Provable.asProver(() => {
             Provable.log(
                 'ethProof.prevStoreHashLowerBytesField vs this.latestHeliusStoreInputHashLowerBytes',
-                prevStoreHashLowerBytesField.toString(),
+                prevStoreHash.lowerBytesField.toString(),
                 this.latestHeliusStoreInputHashLowerBytes.get().toString()
             );
         });
@@ -143,10 +142,10 @@ export class EthProcessor extends SmartContract {
             Poseidon.hashPacked(Bytes32.provable, executionStateRoot)
         );
         this.latestHeliusStoreInputHashHighByte.set(
-            ethProof.publicOutput.storeHashHighByteField
+            ethProof.publicOutput.highByteField
         );
         this.latestHeliusStoreInputHashLowerBytes.set(
-            ethProof.publicOutput.storeHashLowerBytesField
+            ethProof.publicOutput.lowerBytesField
         );
     }
 }

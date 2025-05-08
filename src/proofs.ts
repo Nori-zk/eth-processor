@@ -1,5 +1,5 @@
 import { resolve } from "path";
-import rootDir from "./utils";
+import { rootDir } from "./utils.js";
 
 const basePath = resolve(rootDir, '../../src/proofs');
 

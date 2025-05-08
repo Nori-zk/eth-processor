@@ -6,7 +6,7 @@ import {
 import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
 import { wait } from './txWait.js';
 import { PrivateKey } from 'o1js';
-import { decodeProof } from './proofDecoder.js';
+import { decodeProof } from './utils.js';
 
 new LogPrinter('[TestEthProcessor]', [
     'log',
