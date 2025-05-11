@@ -1,42 +1,47 @@
+import { Logger } from '@nori-zk/proof-conversion';
 import { fetchTransactionStatus } from 'o1js';
+
+const logger = new Logger('EthProcessorTxWait');
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function wait(
     txId: string,
     minaRPCNetworkUrl: string,
     maxAttempts = 50,
-    intervalMs = 20000,
-    maxUnknownCount = 5
+    intervalMs = 20000
 ): Promise<boolean> {
+    logger.verbose(`Waiting for tx with id:\n${txId}`);
     let attempt = 0;
-    let unknownCount = 0;
-    return new Promise((resolve, reject) => {
-        (async () => {
-            attempt++;
-            do {
-                const status = await fetchTransactionStatus(
-                    txId,
-                    minaRPCNetworkUrl
-                );
-                switch (status) {
-                    case 'INCLUDED': {
-                        resolve(true);
-                        break;
-                    }
-                    case 'PENDING': {
-                        break;
-                    }
-                    case 'UNKNOWN': {
-                        if (unknownCount < maxUnknownCount) {
-                            unknownCount++;
-                            break;
-                        }
-                        reject(new Error(`Transaction UNKNOWN status.`));
-                        break;
-                    }
-                }
-                await new Promise((resolve) => setTimeout(resolve, intervalMs));
-            } while (attempt <= maxAttempts);
-            reject(new Error('Max attempts breached.'));
-        })().catch((err) => reject(err));
-    });
+    do {
+        try {
+            logger.verbose(
+                `Fetching transaction status attempt '${attempt + 1}'.`
+            );
+            const status = await fetchTransactionStatus(
+                txId,
+                minaRPCNetworkUrl
+            );
+            logger.verbose(
+                `Received transaction status '${status}' for attempt '${attempt + 1}'.`
+            );
+            if (status === 'INCLUDED') {
+                return true;
+            }
+        } catch (err) {
+            logger.warn(
+                // prettier-ignore
+                `Error during fetchTransactionStatus (attempt '${attempt + 1}'):\n${String(err)}`
+            );
+        }
+        attempt++;
+        if (attempt < maxAttempts) await sleep(intervalMs);
+    } while (attempt < maxAttempts);
+
+    logger.warn(
+        `Max attempts exceeded while waiting for a tx. Aborting.`
+    );
+
+    throw new Error(
+        `Max attempts exceeded while waiting for tx with id:\n${txId}`
+    );
 }

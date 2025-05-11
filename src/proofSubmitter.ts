@@ -59,11 +59,11 @@ export class MinaEthProcessorSubmitter {
         this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
         this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
 
-        logger.log('Loaded constants from .env');
+        logger.log('Loaded constants from: .env');
     }
 
     async networkSetUp() {
-        logger.log('Setting up network');
+        logger.log('Setting up network.');
         const networkUrl =
             (process.env.MINA_RPC_NETWORK_URL as string) ||
             'https://api.minascan.io/node/devnet/v1/graphql';
