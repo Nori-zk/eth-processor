@@ -1,6 +1,6 @@
 {
   "name": "@nori-zk/ethprocessor",
-  "version": "0.2.7",
+  "version": "3.0.2",
   "description": "zkApp for verifying SP1 Helios Nori proof and storing latest execution state root on Mina",
   "author": "Nori",
   "license": "Apache-2.0",
@@ -18,21 +18,23 @@
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "scripts": {
-    "preinstall": "npm run make:build-dir && npm run copy:proof-conversion",
-    "prebuild": "npm run make:build-dir && npm run copy:proof-conversion",
-    "copy:proof-conversion": "ncp ./proof-conversion.tgz build",
     "clean": "rimraf build",
-    "make:build-dir": "mkdirp build",
-    "build": "npm run clean && npm run make:build-dir && npm run copy:proof-conversion && tsc",
+    "build": "npm run clean && tsc",
     "buildw": "tsc --watch",
-    "coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --runInBand",
     "format": "prettier --write --ignore-unknown **/*",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
+    "test-ci": "npm run test -- -t \"should run the proof submission process correctly\" && npm run test -- -t \"should perform a series of proof submissions\" && npm run test -- -t \"should invoke a hash validation issue when we skip transition proofs\"",
+    "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --runInBand",
     "lint": "npx eslint src/* --fix",
-    "eth": "npm run build && node --experimental-vm-modules build/src/EthScript.js"
+    "eth": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules  build/src/EthScript.js",
+    "deploy": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules build/src/bin/deploy.js",
+    "prove-and-submit": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules build/src/bin/proveAndSubmit.js",
+    "bake-vk-hashes": "npm run build && node --max-old-space-size=8192 --max-old-space-size=8192 --max-semi-space-size=128 --no-liftoff --no-wasm-tier-up --experimental-vm-modules --experimental-wasm-modules build/src/bin/bakeVkHashes.js"
+
   },
   "devDependencies": {
+    "@types/node": "^20.17.19",
     "@babel/preset-env": "^7.16.4",
     "@babel/preset-typescript": "^7.16.0",
     "@types/jest": "^29.5.12",
@@ -49,17 +51,16 @@
     "typescript": "^5.4.5"
   },
   "peerDependencies": {
-    "o1js": "^2.*"
+    "o1js": "2.3.0"
   },
   "engines": {
-    "node": ">=18.14.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
-    "dotenv": "^16.4.7",
-    "proof-conversion": "./build/proof-conversion.tgz"
+    "@nori-zk/proof-conversion": "^0.5.8",
+    "dotenv": "^16.4.7"
   },
   "files": [
-    "proof-conversion.tgz",
-    "build/**/*"
+    "build"
   ]
 }

@@ -1,182 +1,177 @@
-import { EthProcessor, EthProofType } from './EthProcessor.js';
-import { EthVerifier, EthInput, Bytes32 } from './EthVerifier.js';
-import { ethers } from 'ethers';
-import { NodeProofLeft } from 'proof-conversion';
 import {
-  AccountUpdate,
-  Mina,
-  PrivateKey,
-  PublicKey,
-  Cache,
-  NetworkId,
-  UInt64,
-  VerificationKey,
+    AccountUpdate,
+    Mina,
+    PrivateKey,
+    NetworkId,
+    fetchAccount,
 } from 'o1js';
-import { CreateProofArgument } from './interfaces.js';
+import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
+import { EthProcessor, EthProofType } from './EthProcessor.js';
+import { EthVerifier, EthInput } from './EthVerifier.js';
+import { CreateProofArgument, VerificationKey } from './types.js';
+import { compileAndVerifyContracts, decodeProof } from './utils.js';
+import { Bytes32, StoreHash } from './types.js';
+
+const logger = new Logger('EthProcessorSubmitter');
 
 export class MinaEthProcessorSubmitter {
-  zkApp: EthProcessor;
-  senderPrivateKey: PrivateKey;
-  deployerPrivateKey: PrivateKey;
-  zkAppPrivateKey: PrivateKey;
+    zkApp: EthProcessor;
+    senderPrivateKey: PrivateKey;
+    zkAppPrivateKey: PrivateKey;
+    network: NetworkId;
+    txFee: number;
+    ethProcessorVerificationKey: VerificationKey;
+    ethVerifierVerificationKey: VerificationKey;
 
-  // Execution environment flags.
-  proofsEnabled: boolean;
-  liveNet: boolean;
+    constructor(private type: 'plonk' = 'plonk') {
+        logger.info(`🛠 MinaEthProcessorSubmitter constructor called!`);
+        const errors: string[] = [];
 
-  constructor(private type: 'plonk' = 'plonk') {
-    this.zkApp = new EthProcessor(
-      PublicKey.fromBase58(process.env.ZK_APP_ADDRESS as string)
-    );
-    this.senderPrivateKey = PrivateKey.fromBase58(
-      process.env.SENDER_PRIVATE_KEY as string
-    );
-    this.proofsEnabled = process.env.PROOFS_ENABLED === 'true';
-    this.liveNet = process.env.LIVE_NET === 'true';
-    console.log('Loaded constants from .env');
-  }
+        const senderPrivateKeyBase58 = process.env.SENDER_PRIVATE_KEY as string;
+        const network = process.env.NETWORK as string;
+        const zkAppPrivateKeyBase58 = process.env.ZKAPP_PRIVATE_KEY as string;
 
-  async createProof(
-    proofArguments: CreateProofArgument,
-  ): Promise<ReturnType<typeof EthVerifier.compute>> {
-    const { sp1PlonkProof, conversionOutputProof } = proofArguments;
+        if (!senderPrivateKeyBase58)
+            errors.push('SENDER_PRIVATE_KEY is required');
 
-    const rawProof = await NodeProofLeft.fromJSON(
-      conversionOutputProof.proofData
-    );
-
-    const ethSP1Proof = sp1PlonkProof;
-
-    // Decode proof values.
-    const defaultEncoder = ethers.AbiCoder.defaultAbiCoder();
-    const decoded = defaultEncoder.decode(
-      [
-        'bytes32',
-        'bytes32',
-        'bytes32',
-        'uint64',
-        'bytes32',
-        'uint64',
-        'bytes32',
-        'bytes32',
-      ],
-      new Uint8Array(Buffer.from(ethSP1Proof.public_values.buffer.data))
-    );
-
-    // Create input for verification.
-    const input = new EthInput({
-      executionStateRoot: Bytes32.fromHex(decoded[0].slice(2)),
-      newHeader: Bytes32.fromHex(decoded[1].slice(2)),
-      nextSyncCommitteeHash: Bytes32.fromHex(decoded[2].slice(2)),
-      newHead: UInt64.from(decoded[3]),
-      prevHeader: Bytes32.fromHex(decoded[4].slice(2)),
-      prevHead: UInt64.from(decoded[5]),
-      syncCommitteeHash: Bytes32.fromHex(decoded[6].slice(2)),
-      startSyncComitteHash: Bytes32.fromHex(decoded[7].slice(2)),
-    });
-
-    // Compute and verify proof.
-    console.log('Computing proof.');
-    return await EthVerifier.compute(input, rawProof);
-  }
-
-  async submit(ethProof: EthProofType) {
-    // Update contract state
-    console.log('MinaEthProcessorSubmittor: Creating update tx.');
-    try {
-      const updateTx = await Mina.transaction(
-        this.senderPrivateKey.toPublicKey(),
-        async () => {
-          await this.zkApp.update(ethProof);
+        if (!network) {
+            errors.push('NETWORK is required');
+        } else if (!['devnet', 'mainnet', 'lightnet'].includes(network)) {
+            errors.push(
+                `NETWORK must be one of: devnet, mainnet, lightnet (got "${network}")`
+            );
+        } else {
+            this.network = network as NetworkId;
         }
-      );
-      await updateTx.prove();
-      console.log('MinaEthProcessorSubmittor: transaction proven.');
-      const tx = await updateTx.sign([this.senderPrivateKey]).send();
-      console.log('MinaEthProcessorSubmittor: transaction sent.');
 
-      // TODO: This wont work on mainet. // TODO
-      let m = await Mina.getAccount(this.zkApp.address);
-      console.log('Latest head on chain: ', m.zkapp?.appState[1].toString());
-      return tx;
+        if (!zkAppPrivateKeyBase58) {
+            errors.push(
+                'ZKAPP_PRIVATE_KEY is required when not in lightnet mode'
+            );
+        }
 
-    } catch (err) {
-      console.error(`An error occured submitting the proof: ${err}`);
-      throw err;
+        if (errors.length > 0) {
+            throw `Configuration errors:\n- ${errors.join('\n- ')}`;
+        }
+
+        this.senderPrivateKey = PrivateKey.fromBase58(senderPrivateKeyBase58);
+        this.zkAppPrivateKey = PrivateKey.fromBase58(zkAppPrivateKeyBase58);
+        this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
+        this.txFee = Number(process.env.TX_FEE || 0.1) * 1e9;
+
+        logger.log('Loaded constants from: .env');
     }
-  }
 
-  async networkSetUp() {
-    if (this.liveNet == false) {
-      try {
-        // Contract state variables.
-        let deployerAccount: Mina.TestPublicKey;
-        let deployerKey: PrivateKey;
-        let senderAccount: Mina.TestPublicKey;
-        let senderKey: PrivateKey;
-
-        // Initialize local blockchain.
-        const Local = await Mina.LocalBlockchain({
-          proofsEnabled: this.proofsEnabled,
+    async networkSetUp() {
+        logger.log('Setting up network.');
+        const networkUrl =
+            (process.env.MINA_RPC_NETWORK_URL as string) ||
+            'https://api.minascan.io/node/devnet/v1/graphql';
+        const networkId = this.network === 'mainnet' ? 'mainnet' : 'testnet';
+        const Network = Mina.Network({
+            networkId,
+            mina: networkUrl,
         });
-        Mina.setActiveInstance(Local);
-        [deployerAccount, senderAccount] = Local.testAccounts;
-        deployerKey = deployerAccount.key;
-        senderKey = senderAccount.key;
-
-        // Overwrite default .env values.
-        this.senderPrivateKey = senderKey;
-        this.deployerPrivateKey = deployerKey;
-        this.zkAppPrivateKey = PrivateKey.random();
-      } catch (err) {
-        console.error(`An error occured initializing the Mina network: ${err}`);
-      }
-    } else {
-      const MINA_RPC_NETWORK_URL = process.env.MINA_RPC_NETWORK_URL as string;
-
-      // Configure Mina livenet network.
-      const Network = Mina.Network({
-        networkId: 'livenet' as NetworkId,
-        mina: MINA_RPC_NETWORK_URL,
-      });
-      Mina.setActiveInstance(Network);
-
-      throw new Error('Livenet not set-up yet');
+        Mina.setActiveInstance(Network);
+        logger.log('Finished Mina network setup.');
     }
 
-    console.log('Finished mina network set up');
-  }
-
-  async deployContract() {
-    let vk: VerificationKey;
-
-    // Compile both contracts.
-    try {
-      console.log('Compiling verifier contract');
-
-      // await EthVerifier.compile({ cache: Cache.FileSystemDefault }); // what about just doing this. JK
-      vk = (await EthVerifier.compile({ cache: Cache.FileSystemDefault }))
-        .verificationKey;
-
-      console.log('Compiled vk');
-      if (this.proofsEnabled) {
-        await EthProcessor.compile();
-      }
-      console.log('Compiled');
-    } catch (err) {
-      console.error(`An error occured compiling the contracts: ${err}`);
+    async compileContracts() {
+        const {ethVerifierVerificationKey, ethProcessorVerificationKey} = await compileAndVerifyContracts(logger);
+        this.ethVerifierVerificationKey = ethVerifierVerificationKey;
+        this.ethProcessorVerificationKey = ethProcessorVerificationKey;
     }
 
-    this.zkApp = new EthProcessor(this.zkAppPrivateKey.toPublicKey());
-    const deployTx = await Mina.transaction(
-      this.deployerPrivateKey.toPublicKey(),
-      async () => {
-        AccountUpdate.fundNewAccount(this.deployerPrivateKey.toPublicKey());
-        await this.zkApp.deploy();
-      }
-    );
-    await deployTx.prove();
-    await deployTx.sign([this.deployerPrivateKey, this.zkAppPrivateKey]).send();
-    console.log('Successfully deployed EthProcessor');
-  }
+    async deployContract(storeHash: Bytes32) {
+        logger.log('Creating deploy update transaction.');
+        const deployTx = await Mina.transaction(
+            { sender: this.senderPrivateKey.toPublicKey(), fee: this.txFee },
+            async () => {
+                AccountUpdate.fundNewAccount(
+                    this.senderPrivateKey.toPublicKey()
+                );
+                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: StoreHash.fromBytes32(storeHash)});
+            }
+        );
+        logger.log('Deploy transaction created successfully. Proving...');
+        await deployTx.prove();
+        logger.log(
+            'Transaction proved. Signing and sending the transaction...'
+        );
+        await deployTx
+            .sign([this.senderPrivateKey, this.zkAppPrivateKey])
+            .send()
+            .wait();
+        logger.log('EthProcessor deployed successfully.');
+    }
+
+    async createProof(
+        proofArguments: CreateProofArgument
+    ): Promise<ReturnType<typeof EthVerifier.compute>> {
+        try {
+            logger.log('Creating proof.');
+            const { sp1PlonkProof, conversionOutputProof } = proofArguments;
+
+            const rawProof = await NodeProofLeft.fromJSON(
+                conversionOutputProof.proofData
+            );
+
+            const ethSP1Proof = sp1PlonkProof;
+
+            logger.log('Decoding converted proof and creating verification inputs.');
+
+            // Decode proof values and create input for verification.
+            const input = new EthInput(decodeProof(ethSP1Proof));
+
+            // Compute and verify proof.
+            logger.log('Computing proof.');
+            return EthVerifier.compute(input, rawProof);
+        } catch (err) {
+            logger.error(`Error computing proof: ${String(err)}`);
+            throw err;
+        }
+    }
+
+    async submit(ethProof: EthProofType) {
+        logger.log('Submitting a proof.');
+        try {
+            await fetchAccount({ publicKey: this.zkApp.address });
+            await fetchAccount({
+                publicKey: this.senderPrivateKey.toPublicKey(),
+            });
+            logger.log('Fetched accounts.');
+
+            logger.log('Creating update transaction.');
+            const updateTx = await Mina.transaction(
+                {
+                    sender: this.senderPrivateKey.toPublicKey(),
+                    fee: this.txFee,
+                    memo: `State for slot ${ethProof.publicInput.newHead.toString()} set`,
+                },
+                async () => {
+                    await this.zkApp.update(ethProof);
+                }
+            );
+
+            await updateTx.prove();
+            logger.log('Transaction proven.');
+
+            const tx = await updateTx.sign([this.senderPrivateKey]).send();
+            logger.log(
+                `Transaction sent to '${this.network}'.`
+            );
+            const txId = tx.data!.sendZkapp.zkapp.id;
+            const txHash = tx.data!.sendZkapp.zkapp.hash;
+            if (!txId) {
+                throw new Error('txId is undefined');
+            }
+            return {
+                txId,
+                txHash,
+            };
+        } catch (err) {
+            logger.error(`Error submitting proof: ${String(err)}`);
+            throw err;
+        }
+    }
 }

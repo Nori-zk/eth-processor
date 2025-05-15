@@ -18,5 +18,5 @@ export default {
   },
   "setupFilesAfterEnv": [
     "./jest.log.config.js"
-  ],
+  ]
 };
