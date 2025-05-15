@@ -91,7 +91,6 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
             // Wait for finalization
             await wait(result.txId, process.env.MINA_RPC_NETWORK_URL!);
-
             i++;
         }
     });

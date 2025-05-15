@@ -146,6 +146,7 @@ export class MinaEthProcessorSubmitter {
                 {
                     sender: this.senderPrivateKey.toPublicKey(),
                     fee: this.txFee,
+                    memo: `State for slot ${ethProof.publicInput.newHead.toString()} set`,
                 },
                 async () => {
                     await this.zkApp.update(ethProof);
