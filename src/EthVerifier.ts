@@ -45,6 +45,9 @@ class EthInput extends Struct({
     startSyncCommitteeHash: Bytes32.provable,
     prevStoreHash: Bytes32.provable,
     storeHash: Bytes32.provable,
+    // do we want a struct here? witness? 
+    // 
+    // witness private value is the same? not part of the code provable code.... allows arb js ... 
 }) {}
 const EthVerifier = ZkProgram({
     name: 'EthVerifier',
@@ -103,6 +106,7 @@ const EthVerifier = ZkProgram({
                     Provable.Array(FrC.provable, 2),
                     [pi0, pi1]
                 );
+                
                 Provable.log('piDigest', piDigest);
                 Provable.log(
                     'proof.publicOutput.rightOut',

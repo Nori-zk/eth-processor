@@ -128,7 +128,7 @@ export function decodeConsensusProof(ethSP1Proof: PlonkProof) {
     // 5. Validate elements fit in the byte slice.
     const elementsStartBI = lengthOffsetBI + 32n;
     const elementsStart = Number(lengthOffsetBI);
-    const totalElementsSizeBI = arrayLenBI * 96n;
+    const totalElementsSizeBI = arrayLenBI * 128n;
     const requiredBytes = elementsStartBI + totalElementsSizeBI;
     if (requiredBytes > proofDataLengthBI) {
         throw new Error(
@@ -140,16 +140,17 @@ export function decodeConsensusProof(ethSP1Proof: PlonkProof) {
     // We may not like to do this because its very unprovable! instead probably keep the formatting as the same as the input and with
     // slicing we can extract out the correct bits. We'd need to do this arithmetically somehow with bytes32? Well they are composed of UInt8's
 
-    const verifiedStorageSlots: {key: Bytes32, value: Bytes32, contractAddress: Bytes32}[] = [];
+    const verifiedStorageSlots: {key: Bytes32, slotKeyAddress: Bytes32, value: Bytes32, contractAddress: Bytes32}[] = [];
     for (let i = 0; i < Number(arrayLenBI); i++) {
-        const start = elementsStart + i * 96;
-        const end = start + 96;
+        const start = elementsStart + i * 128;
+        const end = start + 128;
         const elementBytes = proofData.slice(start, end);
 
         const key = elementBytes.slice(0, 32);
-        const value = elementBytes.slice(32, 64);
-        const contractAddress = elementBytes.slice(64, 96);
-        verifiedStorageSlots.push({key: Bytes32.from(key), value: Bytes32.from(value), contractAddress: Bytes32.from(contractAddress)});
+        const slotKeyAddress = elementBytes.slice(32, 64);
+        const value = elementBytes.slice(64, 96);
+        const contractAddress = elementBytes.slice(96, 128);
+        verifiedStorageSlots.push({key: Bytes32.from(key), slotKeyAddress: Bytes32.from(slotKeyAddress), value: Bytes32.from(value), contractAddress: Bytes32.from(contractAddress)});
     }
 
     const provables = {
