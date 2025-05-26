@@ -82,6 +82,7 @@ const EthVerifier = ZkProgram({
                 Provable.log('newHead slot', input.newHead);
 
                 // Verification of the input
+                // But how is this provable??
                 let bytes: UInt8[] = [];
                 bytes = bytes.concat(input.executionStateRoot.bytes);
                 bytes = bytes.concat(input.newHeader.bytes);
