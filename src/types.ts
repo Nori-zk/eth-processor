@@ -97,7 +97,6 @@ export class VerifiedContractStorageSlot extends Struct({
     slotKeyAddress: Bytes20.provable,
     value: Bytes32.provable,
     contractAddress: Bytes20.provable,
-    exists: Bool,
 }) {
     static fromAbiElementBytes(elementBytes: Uint8Array<ArrayBuffer>) {
         /*
@@ -117,24 +116,23 @@ export class VerifiedContractStorageSlot extends Struct({
             slotKeyAddress: Bytes20.from(slotKeyAddress),
             value: Bytes32.from(value),
             contractAddress: Bytes20.from(contractAddress),
-            exists: Bool.fromValue(true),
         });
     }
 
-    get bytes() {
+    static bytes(input: VerifiedContractStorageSlot) {
         let bytes: UInt8[] = [];
-        bytes = bytes.concat(this.key.bytes);
+        bytes = bytes.concat(input.key.bytes);
         bytes = bytes.concat(
             ...[
                 ...new Array(12).fill(0).map((_) => UInt8.from(0)),
-                this.slotKeyAddress.bytes,
+                input.slotKeyAddress.bytes,
             ]
         );
-        bytes = bytes.concat(this.value.bytes);
+        bytes = bytes.concat(input.value.bytes);
         bytes = bytes.concat(
             ...[
                 ...new Array(12).fill(0).map((_) => UInt8.from(0)),
-                this.contractAddress.bytes,
+                input.contractAddress.bytes,
             ]
         );
         return bytes;
@@ -146,3 +144,4 @@ export const VerifiedContractStorageSlots = DynamicArray(
     VerifiedContractStorageSlot,
     { maxLength: VerifiedContractStorageSlotsMaxLength }
 );
+

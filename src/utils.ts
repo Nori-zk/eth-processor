@@ -149,34 +149,19 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
     }
 
     // 6. Parse each VerifiedContractStorageSlot.
-
     if (arrayLen > VerifiedContractStorageSlotsMaxLength) {
         throw new Error(
             `Too many storage slots: expected max '${VerifiedContractStorageSlotsMaxLength}', got '${arrayLen}'`
         );
     }
-    const verifiedStorageSlots: VerifiedContractStorageSlot[] = [];
+    const verifiedContractStorageSlots = VerifiedContractStorageSlots.from([]);
     for (let i = 0; i < arrayLen; i++) {
         const start = elementsStart + i * 128;
         const end = start + 128;
         const elementBytes = proofData.slice(start, end);
         const verifiedStorageSlot =
             VerifiedContractStorageSlot.fromAbiElementBytes(elementBytes);
-        verifiedStorageSlots.push(verifiedStorageSlot);
-    }
-    // Pad zeros
-    while (
-        verifiedStorageSlots.length < VerifiedContractStorageSlotsMaxLength
-    ) {
-        verifiedStorageSlots.push(
-            new VerifiedContractStorageSlot({
-                key: Bytes32.zero,
-                slotKeyAddress: Bytes20.zero,
-                value: Bytes32.zero,
-                contractAddress: Bytes20.zero,
-                exists: Bool.fromValue(false),
-            })
-        );
+        verifiedContractStorageSlots.push(verifiedStorageSlot);
     }
 
     const provables = {
@@ -190,10 +175,7 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
         startSyncCommitteeHash: Bytes32.from(startSyncCommitteeHashSlice),
         prevStoreHash: Bytes32.from(prevStoreHashSlice),
         storeHash: Bytes32.from(storeHashSlice),
-        verifiedContractStorageSlots: new VerifiedContractStorageSlots(
-            verifiedStorageSlots,
-            new Field(verifiedStorageSlots.length)
-        ),
+        verifiedContractStorageSlots: verifiedContractStorageSlots
     };
 
     return provables;

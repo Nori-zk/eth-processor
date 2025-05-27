@@ -87,7 +87,6 @@ const EthVerifier = ZkProgram({
                 Provable.log('newHead slot', input.newHead);
 
                 // Verification of the input
-                // But how is this provable??
                 let bytes: UInt8[] = [];
                 bytes = bytes.concat(input.executionStateRoot.bytes);
                 bytes = bytes.concat(input.newHeader.bytes);
@@ -99,16 +98,11 @@ const EthVerifier = ZkProgram({
                 bytes = bytes.concat(input.startSyncCommitteeHash.bytes);
                 bytes = bytes.concat(input.prevStoreHash.bytes);
                 bytes = bytes.concat(input.storeHash.bytes);
-                // This might not work but we are using JS methods anyway like concat so don't see why filter and flatMap couldn't be used either
-                bytes = bytes.concat(
-                    ...input.verifiedContractStorageSlots.array
-                        .filter((verifiedContractStorageSlot) =>
-                            verifiedContractStorageSlot.exists.toBoolean()
-                        )
-                        .flatMap(
-                            (verifiedContractStorageSlot) => new VerifiedContractStorageSlot(verifiedContractStorageSlot).bytes
-                        )
-                );
+                // Below is the official mina attestation dynamic array for each
+                input.verifiedContractStorageSlots.forEach((verifiedContractStorageSlot) => {
+                     const slotBytes = VerifiedContractStorageSlot.bytes(verifiedContractStorageSlot);
+                     bytes = bytes.concat(slotBytes);
+                });
 
                 // Check that zkprograminput is same as passed to the SP1 program
                 const pi0 = ethPlonkVK;
