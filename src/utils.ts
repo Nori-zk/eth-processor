@@ -1,19 +1,28 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ethers } from 'ethers';
-import { UInt64 } from 'o1js';
+import { Bool, Bytes, Field, UInt64 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
 import { EthVerifier } from './EthVerifier.js';
 import { EthProcessor } from './EthProcessor.js';
-import { PlonkProof, Bytes32 } from './types.js';
+import {
+    PlonkProof,
+    Bytes32,
+    VerifiedContractStorageSlot,
+    VerifiedContractStorageSlots,
+    VerifiedContractStorageSlotsMaxLength,
+    Bytes20,
+} from './types.js';
 import { ethVerifierVkHash } from './integrity/EthVerifier.VKHash.js';
 import { ethProcessorVkHash } from './integrity/EthProcessor.VKHash.js';
+import { DynamicArray } from 'mina-attestations';
 
 /*
     struct VerifiedContractStorageSlot {
         bytes32 key;                                                                         //0-31    [0  ..32 ]
-        bytes32 value;                                                                       //32-63   [32 ..64 ]
-        address contractAddress;                                                             //64-95   [64 ..96 ] address: equivalent to uint160, zero padding on LHS
+        address slotKeyAddress;                                                              //32-63   [32 ..64 ] address: equivalent to uint160, zero padding on LHS
+        bytes32 value;                                                                       //64-95   [64 ..96 ]
+        address contractAddress;                                                             //96-127  [96 ..128] address: equivalent to uint160, zero padding on LHS
     } 
  
     struct ProofOutputs { 
@@ -32,11 +41,13 @@ import { ethProcessorVkHash } from './integrity/EthProcessor.VKHash.js';
         //bytes32 OFFSET (VALUE 352 points to start of VerifiedContractStorageSlot[] struct) //352-383 [352..384] (Start of VerifiedContractStorageSlot[] struct)
         //bytes32 LENGTH (VALUE of how many VerifiedContractStorageSlot elements there are)  //384-415 [384..416]
         //TUPLES OF VerifiedContractStorageSlot if there are any 
-        //bytes32 VerifiedContractStorageSlot[0]_key;                                        //416-447 [416..448]
-        //bytes32 VerifiedContractStorageSlot[0]_value;                                      //448-479 [448..480]
-        //address VerifiedContractStorageSlot[0]_contractAddress;                            //480-511 [480..512]
+        //bytes32 VerifiedContractStorageSlot[0]_key                                         //416-447 [416..448]
+        //address VerifiedContractStorageSlot[0]_slotKeyAddress                              //448-479 [448..480]
+        //bytes32 VerifiedContractStorageSlot[0]_value                                       //480-511 [480..512]
+        //address VerifiedContractStorageSlot[0]_contractAddress                             //512-543 [512..544]
         // ...and so on for additional array elements if any
     }
+
 */
 
 export function assert(lhs: any, rhs: any, msg: string) {
@@ -60,7 +71,7 @@ function assertUint64(value: bigint): void {
     }
 }
 
-export function decodeConsensusProof(ethSP1Proof: PlonkProof) {
+export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
     const proofData = new Uint8Array(
         Buffer.from(ethSP1Proof.public_values.buffer.data)
     );
@@ -116,18 +127,19 @@ export function decodeConsensusProof(ethSP1Proof: PlonkProof) {
     // 4. Read array length (located immediately after arrayOffset).
     const lengthOffsetBI = arrayOffsetBI + 32n;
     if (proofDataLengthBI < lengthOffsetBI + 32n) {
-        return new Error('Byte slice too short to read array length.');
+        throw new Error('Byte slice too short to read array length.');
     }
     const arrayLenSlice = proofData.slice(
         Number(lengthOffsetBI),
         Number(lengthOffsetBI + 32n)
     );
     const arrayLenBI = toBigIntFromBytes(arrayLenSlice);
+    const arrayLen = Number(arrayLenBI);
     console.log('arrayLenBI', arrayLenBI);
 
     // 5. Validate elements fit in the byte slice.
     const elementsStartBI = lengthOffsetBI + 32n;
-    const elementsStart = Number(lengthOffsetBI);
+    const elementsStart = Number(elementsStartBI);
     const totalElementsSizeBI = arrayLenBI * 128n;
     const requiredBytes = elementsStartBI + totalElementsSizeBI;
     if (requiredBytes > proofDataLengthBI) {
@@ -137,20 +149,26 @@ export function decodeConsensusProof(ethSP1Proof: PlonkProof) {
     }
 
     // 6. Parse each VerifiedContractStorageSlot.
-    // We may not like to do this because its very unprovable! instead probably keep the formatting as the same as the input and with
-    // slicing we can extract out the correct bits. We'd need to do this arithmetically somehow with bytes32? Well they are composed of UInt8's
-
-    const verifiedStorageSlots: {key: Bytes32, slotKeyAddress: Bytes32, value: Bytes32, contractAddress: Bytes32}[] = [];
-    for (let i = 0; i < Number(arrayLenBI); i++) {
+    const verifiedStorageSlots: VerifiedContractStorageSlot[] = [];
+    for (let i = 0; i < arrayLen; i++) {
         const start = elementsStart + i * 128;
         const end = start + 128;
         const elementBytes = proofData.slice(start, end);
-
-        const key = elementBytes.slice(0, 32);
-        const slotKeyAddress = elementBytes.slice(32, 64);
-        const value = elementBytes.slice(64, 96);
-        const contractAddress = elementBytes.slice(96, 128);
-        verifiedStorageSlots.push({key: Bytes32.from(key), slotKeyAddress: Bytes32.from(slotKeyAddress), value: Bytes32.from(value), contractAddress: Bytes32.from(contractAddress)});
+        const verifiedStorageSlot =
+            VerifiedContractStorageSlot.fromAbiElementBytes(elementBytes);
+        verifiedStorageSlots.push(verifiedStorageSlot);
+    }
+    // Pad zeros
+    while (verifiedStorageSlots.length < VerifiedContractStorageSlotsMaxLength) {
+        verifiedStorageSlots.push(
+            new VerifiedContractStorageSlot({
+                key: Bytes32.zero,
+                slotKeyAddress: Bytes20.zero,
+                value: Bytes32.zero,
+                contractAddress: Bytes20.zero,
+                exists: Bool.fromValue(false),
+            })
+        );
     }
 
     const provables = {
@@ -164,9 +182,12 @@ export function decodeConsensusProof(ethSP1Proof: PlonkProof) {
         startSyncCommitteeHash: Bytes32.from(startSyncCommitteeHashSlice),
         prevStoreHash: Bytes32.from(prevStoreHashSlice),
         storeHash: Bytes32.from(storeHashSlice),
-        verifiedStorageSlots,
+        verifiedContractStorageSlots: new VerifiedContractStorageSlots(
+            verifiedStorageSlots,
+            new Field(verifiedStorageSlots.length)
+        ),
     };
-    
+
     return provables;
 }
 

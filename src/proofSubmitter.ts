@@ -9,7 +9,7 @@ import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
 import { EthProcessor, EthProofType } from './EthProcessor.js';
 import { EthVerifier, EthInput } from './EthVerifier.js';
 import { CreateProofArgument, VerificationKey } from './types.js';
-import { compileAndVerifyContracts, decodeProof } from './utils.js';
+import { compileAndVerifyContracts, decodeConsensusMptProof, decodeProof } from './utils.js';
 import { Bytes32, StoreHash } from './types.js';
 
 const logger = new Logger('EthProcessorSubmitter');
@@ -121,7 +121,7 @@ export class MinaEthProcessorSubmitter {
             logger.log('Decoding converted proof and creating verification inputs.');
 
             // Decode proof values and create input for verification.
-            const input = new EthInput(decodeProof(ethSP1Proof));
+            const input = new EthInput(decodeConsensusMptProof(ethSP1Proof));
 
             // Compute and verify proof.
             logger.log('Computing proof.');

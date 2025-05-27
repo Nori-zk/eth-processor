@@ -18,8 +18,12 @@ import {
 import { bridgeHeadNoriSP1HeliosProgramPi0 } from './integrity/BridgeHead.NoriSP1HeliosProgram.pi0.js';
 import { proofConversionSP1ToPlonkPO2 } from './integrity/ProofConversion.sp1ToPlonk.po2.js';
 import { proofConversionSP1ToPlonkVkData } from './integrity/ProofConversion.sp1ToPlonk.vkData.js';
-import { Bytes32, StoreHash } from './types.js';
-
+import {
+    Bytes32,
+    StoreHash,
+    VerifiedContractStorageSlot,
+    VerifiedContractStorageSlots,
+} from './types.js';
 
 // sol! {
 //     struct ProofOutputs {
@@ -45,9 +49,7 @@ class EthInput extends Struct({
     startSyncCommitteeHash: Bytes32.provable,
     prevStoreHash: Bytes32.provable,
     storeHash: Bytes32.provable,
-    // do we want a struct here? witness? 
-    // 
-    // witness private value is the same? not part of the code provable code.... allows arb js ... 
+    verifiedContractStorageSlots: VerifiedContractStorageSlots.provable,
 }) {}
 const EthVerifier = ZkProgram({
     name: 'EthVerifier',
@@ -97,8 +99,18 @@ const EthVerifier = ZkProgram({
                 bytes = bytes.concat(input.startSyncCommitteeHash.bytes);
                 bytes = bytes.concat(input.prevStoreHash.bytes);
                 bytes = bytes.concat(input.storeHash.bytes);
+                // This might not work but we are using JS methods anyway like concat so don't see why filter and flatMap couldn't be used either
+                bytes = bytes.concat(
+                    ...input.verifiedContractStorageSlots.array
+                        .filter((verifiedContractStorageSlot) =>
+                            verifiedContractStorageSlot.exists.toBoolean()
+                        )
+                        .flatMap(
+                            (verifiedContractStorageSlot) => new VerifiedContractStorageSlot(verifiedContractStorageSlot).bytes
+                        )
+                );
 
-                // Check that zkporgraminput is same as passed to the SP1 program
+                // Check that zkprograminput is same as passed to the SP1 program
                 const pi0 = ethPlonkVK;
                 const pi1 = parsePlonkPublicInputsProvable(Bytes.from(bytes));
 
@@ -106,7 +118,7 @@ const EthVerifier = ZkProgram({
                     Provable.Array(FrC.provable, 2),
                     [pi0, pi1]
                 );
-                
+
                 Provable.log('piDigest', piDigest);
                 Provable.log(
                     'proof.publicOutput.rightOut',
@@ -114,7 +126,7 @@ const EthVerifier = ZkProgram({
                 );
 
                 piDigest.assertEquals(proof.publicOutput.rightOut);
-                
+
                 const storeHash = StoreHash.fromBytes32(input.storeHash);
 
                 Provable.asProver(() => {
