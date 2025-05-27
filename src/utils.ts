@@ -149,6 +149,12 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
     }
 
     // 6. Parse each VerifiedContractStorageSlot.
+
+    if (arrayLen > VerifiedContractStorageSlotsMaxLength) {
+        throw new Error(
+            `Too many storage slots: expected max '${VerifiedContractStorageSlotsMaxLength}', got '${arrayLen}'`
+        );
+    }
     const verifiedStorageSlots: VerifiedContractStorageSlot[] = [];
     for (let i = 0; i < arrayLen; i++) {
         const start = elementsStart + i * 128;
@@ -159,7 +165,9 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
         verifiedStorageSlots.push(verifiedStorageSlot);
     }
     // Pad zeros
-    while (verifiedStorageSlots.length < VerifiedContractStorageSlotsMaxLength) {
+    while (
+        verifiedStorageSlots.length < VerifiedContractStorageSlotsMaxLength
+    ) {
         verifiedStorageSlots.push(
             new VerifiedContractStorageSlot({
                 key: Bytes32.zero,
