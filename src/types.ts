@@ -139,7 +139,7 @@ export class VerifiedContractStorageSlot extends Struct({
     }
 }
 
-export const VerifiedContractStorageSlotsMaxLength = 50;
+export const VerifiedContractStorageSlotsMaxLength = 1;
 export const VerifiedContractStorageSlots = DynamicArray(
     VerifiedContractStorageSlot,
     { maxLength: VerifiedContractStorageSlotsMaxLength }

@@ -58,35 +58,60 @@ function writeSuccessDetailsToJsonFiles(
     );
 }
 
-const ephemeralCacheDir = resolve(rootDir, randomBytes(20).toString('base64').replace(/[+/=]/g, ''));
+const ephemeralCacheDir = resolve(
+    rootDir,
+    randomBytes(20).toString('base64').replace(/[+/=]/g, '')
+);
 
 async function main() {
     // Create a temporary folder to compile the cache to, this is nessesary as the forceRecompile option
     // seems to be ignored.
-    mkdirSync(ephemeralCacheDir, {recursive: true});
-    logger.log(`Created an ephemeral build cache directory for eth programs '${ephemeralCacheDir}'`);
+    mkdirSync(ephemeralCacheDir, { recursive: true });
+    logger.log(
+        `Created an ephemeral build cache directory for eth programs '${ephemeralCacheDir}'`
+    );
 
+    const methodsAnalysis = await EthVerifier.analyzeMethods();
+
+    /*logger.log(
+        `EthVerifier analyze methods output:\n${JSON.stringify(
+            methodsAnalysis
+        )}`
+    );*/
+
+    logger.log(
+        `EthVerifier analyze methods gates length:\n${JSON.stringify(
+            methodsAnalysis.compute.gates.length
+        )}`
+    );
     // Compile verifier
     logger.log('Compiling EthVerifier.');
-    const vk = (await EthVerifier.compile({ cache: Cache.FileSystem(ephemeralCacheDir), forceRecompile: true }))
-        .verificationKey;
+
+    const vk = (
+        await EthVerifier.compile({
+            cache: Cache.FileSystem(ephemeralCacheDir),
+            forceRecompile: true,
+        })
+    ).verificationKey;
     const ethVerifierVkHash = vk.hash.toString();
     logger.log(`EthVerifier contract compiled vk: '${ethVerifierVkHash}'.`);
-    // logger.log(`EthVerifier analyze methods output:\n${JSON.stringify(await EthVerifier.analyzeMethods())}`);
 
     // Compile processor
-    const pVK = await EthProcessor.compile({ cache: Cache.FileSystem(ephemeralCacheDir), forceRecompile: true });
+    const pVK = await EthProcessor.compile({
+        cache: Cache.FileSystem(ephemeralCacheDir),
+        forceRecompile: true,
+    });
     logger.log('Compiling EthProcessor.');
     const ethProcessorVKHash = pVK.verificationKey.hash.toString();
     logger.log(`EthProcessor contract compiled vk: '${ethProcessorVKHash}'.`);
     // logger.log(`EthProcessor analyze methods output:\n${JSON.stringify(await EthProcessor.analyzeMethods())}`);
 
-    rmSync(ephemeralCacheDir, {recursive: true});
+    rmSync(ephemeralCacheDir, { recursive: true });
     writeSuccessDetailsToJsonFiles(ethVerifierVkHash, ethProcessorVKHash);
 }
 
 main().catch((err) => {
     logger.fatal(`Main function had an error: ${String(err)}`);
-    rmSync(ephemeralCacheDir, {recursive: true});
+    rmSync(ephemeralCacheDir, { recursive: true });
     process.exit(1);
 });
