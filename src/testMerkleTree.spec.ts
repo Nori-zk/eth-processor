@@ -170,8 +170,10 @@ describe('MerkleTree', () => {
         logger.log(`Computed root hash: ${rootHash}`);
 
         const index = 30000;
+        let start = Date.now();
         const path = getMerklePath(list, index);
-        logger.log(`Merkle path for index ${index}: ${path.array}`);
+        let durationMs = Date.now() - start;
+        logger.log(`Merkle path gotten for index ${index} in '${durationMs}ms': ${path.array}`);
 
         const merkleValidatorMethodsAnalysis =
             await MerkleValidator.analyzeMethods();
@@ -194,9 +196,9 @@ describe('MerkleTree', () => {
         });
         logger.log(`Generated input ${JSON.stringify(input)}`);
 
-        const start = Date.now();
+        start = Date.now();
         const output = await MerkleValidator.compute(input);
-        const durationMs = Date.now() - start;
+        durationMs = Date.now() - start;
         logger.log(`MerkleValidator.compute took ${durationMs}ms`);
 
         expect(output.proof.publicOutput.toBoolean()).toBe(true);
