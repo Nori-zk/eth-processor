@@ -24,6 +24,7 @@ import {
     VerifiedContractStorageSlot,
     VerifiedContractStorageSlots,
 } from './types.js';
+import { DynamicArray } from 'mina-attestations';
 
 // sol! {
 //     struct ProofOutputs {
@@ -49,6 +50,7 @@ class EthInput extends Struct({
     startSyncCommitteeHash: Bytes32.provable,
     prevStoreHash: Bytes32.provable,
     storeHash: Bytes32.provable,
+    verifiedContractStorageSlotsLength: UInt64,
     verifiedContractStorageSlots: VerifiedContractStorageSlots.provable,
 }) {}
 const EthVerifier = ZkProgram({
@@ -88,6 +90,9 @@ const EthVerifier = ZkProgram({
 
                 // Verification of the input
                 let bytes: UInt8[] = [];
+                // Step 1: Offset marker (value = 32, padded to 32 bytes)
+                bytes = bytes.concat(padUInt64To32Bytes(UInt64.from(32))); // [0–31]
+                // Step 2: Fixed struct fields (ProofOutputs) — [32–352]
                 bytes = bytes.concat(input.executionStateRoot.bytes);
                 bytes = bytes.concat(input.newHeader.bytes);
                 bytes = bytes.concat(input.nextSyncCommitteeHash.bytes);
@@ -98,11 +103,45 @@ const EthVerifier = ZkProgram({
                 bytes = bytes.concat(input.startSyncCommitteeHash.bytes);
                 bytes = bytes.concat(input.prevStoreHash.bytes);
                 bytes = bytes.concat(input.storeHash.bytes);
+                // Step 3: Dynamic array header (VerifiedContractStorageSlot[]) — [352–415]
+                bytes = bytes.concat(padUInt64To32Bytes(UInt64.from(416))); // [352–383]
+                bytes = bytes.concat(
+                    padUInt64To32Bytes(input.verifiedContractStorageSlotsLength)
+                ); // [384–415]
+
+                /* 
+                   const lengthNum = Number(input.verifiedContractStorageSlots.length.toBigInt());
+                   const maxLength = 416 + lengthNum * 128;
+                   const bytesArray = DynamicArray(UInt8, {maxLength} )
+                   Can't do this it depends on user input
+                
+               */
+
                 // Below is the official mina attestation dynamic array for each
-                input.verifiedContractStorageSlots.forEach((verifiedContractStorageSlot) => {
-                     const slotBytes = VerifiedContractStorageSlot.bytes(verifiedContractStorageSlot);
-                     bytes = bytes.concat(slotBytes);
-                });
+
+                input.verifiedContractStorageSlots.forEach(
+                    (verifiedContractStorageSlot, isDummy) => {
+                        /* Provable.if(isDummy, ARuntimeType, state, nextState);
+                           Provable if isn't going to work because UInt8[] isnt a runtime type
+                           It would need to be something like StaticArray or DynamicArray.
+                           Should we be doing a dynamicarray of bytes for 'bytes'? not sure if it can be known
+                           at runtime.
+                        */
+                        const slotBytes = VerifiedContractStorageSlot.bytes(
+                            verifiedContractStorageSlot
+                        );
+                        bytes = bytes.concat(slotBytes);
+                    }
+                );
+                // Could we do something like this? 
+                /*
+                    const length = Number(
+                        input.verifiedContractStorageSlotsLength.value.toBigInt()
+                    );
+                    const sliceLen = 416 + length * 128;
+                    bytes = bytes.slice(0, sliceLen);
+                    No because it based on user input.
+                */
 
                 // Check that zkprograminput is same as passed to the SP1 program
                 const pi0 = ethPlonkVK;

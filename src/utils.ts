@@ -1,7 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ethers } from 'ethers';
-import { Bool, Bytes, Field, UInt64 } from 'o1js';
+import { Bool, Bytes, Field, UInt32, UInt64, UInt8 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
 import { EthVerifier } from './EthVerifier.js';
 import { EthProcessor } from './EthProcessor.js';
@@ -175,6 +175,7 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
         startSyncCommitteeHash: Bytes32.from(startSyncCommitteeHashSlice),
         prevStoreHash: Bytes32.from(prevStoreHashSlice),
         storeHash: Bytes32.from(storeHashSlice),
+        verifiedContractStorageSlotsLength: UInt64.from(arrayLen),
         verifiedContractStorageSlots: verifiedContractStorageSlots
     };
 
