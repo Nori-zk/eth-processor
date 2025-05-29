@@ -71,19 +71,18 @@ async function main() {
         `Created an ephemeral build cache directory for eth programs '${ephemeralCacheDir}'`
     );
 
-    const methodsAnalysis = await EthVerifier.analyzeMethods();
-
-    /*logger.log(
-        `EthVerifier analyze methods output:\n${JSON.stringify(
-            methodsAnalysis
-        )}`
-    );*/
-
+    const verifierMethodsAnalysis = await EthVerifier.analyzeMethods();
     logger.log(
-        `EthVerifier analyze methods gates length:\n${JSON.stringify(
-            methodsAnalysis.compute.gates.length
-        )}`
+        //prettier-ignore
+        `EthVerifier analyze methods gates length '${verifierMethodsAnalysis.compute.gates.length}'.`
     );
+
+    const processorMethodsAnalysis = await EthProcessor.analyzeMethods();
+    logger.log(
+        //prettier-ignore
+        `EthProcessor analyze methods gates length '${processorMethodsAnalysis.update.gates.length}'.`
+    );
+
     // Compile verifier
     logger.log('Compiling EthVerifier.');
 
@@ -95,13 +94,15 @@ async function main() {
     ).verificationKey;
     const ethVerifierVkHash = vk.hash.toString();
     logger.log(`EthVerifier contract compiled vk: '${ethVerifierVkHash}'.`);
+    // logger.log(`EthVerifier analyze methods output:\n${JSON.stringify(await EthVerifier.analyzeMethods())}`);
 
     // Compile processor
+
+    logger.log('Compiling EthProcessor.');
     const pVK = await EthProcessor.compile({
         cache: Cache.FileSystem(ephemeralCacheDir),
         forceRecompile: true,
     });
-    logger.log('Compiling EthProcessor.');
     const ethProcessorVKHash = pVK.verificationKey.hash.toString();
     logger.log(`EthProcessor contract compiled vk: '${ethProcessorVKHash}'.`);
     // logger.log(`EthProcessor analyze methods output:\n${JSON.stringify(await EthProcessor.analyzeMethods())}`);
@@ -111,7 +112,7 @@ async function main() {
 }
 
 main().catch((err) => {
-    logger.fatal(`Main function had an error: ${String(err)}`);
+    logger.fatal(`Main function had an error:\n${String(err.stack)}`);
     rmSync(ephemeralCacheDir, { recursive: true });
     process.exit(1);
 });
