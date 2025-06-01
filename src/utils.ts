@@ -17,6 +17,115 @@ import { ethVerifierVkHash } from './integrity/EthVerifier.VKHash.js';
 import { ethProcessorVkHash } from './integrity/EthProcessor.VKHash.js';
 import { DynamicArray } from 'mina-attestations';
 
+// This is explicitly here for validation puposes not supposed to be provable.
+function toBigIntFromBytes(bytes: Uint8Array): bigint {
+    let result = 0n;
+    for (const byte of bytes) {
+        result = (result << 8n) | BigInt(byte);
+    }
+    return result;
+}
+
+const MAX_U64 = (1n << 64n) - 1n;
+
+function assertUint64(value: bigint): void {
+    if (value < 0n || value > MAX_U64) {
+        throw new RangeError(`Value out of range for u64: '${value}'.`);
+    }
+}
+
+const proofOffsets = {
+    inputSlot: 0,
+    inputStoreHash: 8,
+    outputSlot: 40,
+    outputStoreHash: 48,
+    executionStateRoot: 80,
+    verifiedContractStorageSlotsRoot: 112,
+    nextSyncCommitteeHash: 144,
+};
+
+const proofTotalLength = 176;
+
+export function decodeConsensusMptProofNew(ethSP1Proof: PlonkProof) {
+    const proofData = new Uint8Array(
+        Buffer.from(ethSP1Proof.public_values.buffer.data)
+    );
+
+    if (proofData.length !== proofTotalLength) {
+        throw new Error(
+            `Byte slice must be exactly ${proofTotalLength} bytes, got '${proofData.length}'.`
+        );
+    }
+
+    const inputSlotSlice = proofData.slice(
+        proofOffsets.inputSlot,
+        proofOffsets.inputStoreHash
+    );
+    const inputSlot = toBigIntFromBytes(inputSlotSlice);
+    assertUint64(inputSlot);
+
+    const inputStoreHashSlice = proofData.slice(
+        proofOffsets.inputStoreHash,
+        proofOffsets.outputSlot
+    );
+
+    const outputSlotSlice = proofData.slice(
+        proofOffsets.outputSlot,
+        proofOffsets.outputStoreHash
+    );
+    const outputSlot = toBigIntFromBytes(outputSlotSlice);
+    assertUint64(outputSlot);
+
+    const outputStoreHashSlice = proofData.slice(
+        proofOffsets.outputStoreHash,
+        proofOffsets.executionStateRoot
+    );
+
+    const executionStateRootSlice = proofData.slice(
+        proofOffsets.executionStateRoot,
+        proofOffsets.verifiedContractStorageSlotsRoot
+    );
+
+    const verifiedContractStorageSlotsRootSlice = proofData.slice(
+        proofOffsets.verifiedContractStorageSlotsRoot,
+        proofOffsets.nextSyncCommitteeHash
+    );
+
+    const nextSyncCommitteeHashSlice = proofData.slice(
+        proofOffsets.nextSyncCommitteeHash,
+        proofTotalLength
+    );
+
+    const provables = {
+        inputSlot: UInt64.from(inputSlot),
+        inputStoreHash: Bytes32.from(inputStoreHashSlice),
+        outputSlot: UInt64.from(outputSlot),
+        outputStoreHash: Bytes32.from(outputStoreHashSlice),
+        executionStateRoot: Bytes32.from(executionStateRootSlice),
+        verifiedContractStorageSlots: Bytes32.from(verifiedContractStorageSlotsRootSlice),
+        nextSyncCommitteeHash: Bytes32.from(nextSyncCommitteeHashSlice),
+    };
+
+    return provables;
+}
+
+/*
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProofOutputs {
+    pub input_slot: u64,                            // [  0..  8] u64
+    pub input_store_hash: B256,                     // [  8.. 40] bytes32
+    pub output_slot: u64,                           // [ 40.. 48] u64
+    pub output_store_hash: B256,                    // [ 48.. 80] bytes32
+    pub execution_state_root: B256,                 // [ 80..112] bytes32
+    pub verified_contract_storage_slots_root: B256, // [112..144] bytes32
+    pub next_sync_committee_hash: B256,             // [144..176] bytes32
+}
+
+*/
+
+/// Below decoder is deprecated
+
 /*
     struct VerifiedContractStorageSlot {
         bytes32 key;                                                                         //0-31    [0  ..32 ]
@@ -52,23 +161,6 @@ import { DynamicArray } from 'mina-attestations';
 
 export function assert(lhs: any, rhs: any, msg: string) {
     if (lhs !== rhs) throw msg;
-}
-
-// This is explicitly here for validation puposes not supposed to be provable.
-function toBigIntFromBytes(bytes: Uint8Array): bigint {
-    let result = 0n;
-    for (const byte of bytes) {
-        result = (result << 8n) | BigInt(byte);
-    }
-    return result;
-}
-
-const MAX_U64 = (1n << 64n) - 1n;
-
-function assertUint64(value: bigint): void {
-    if (value < 0n || value > MAX_U64) {
-        throw new RangeError(`Value out of range for u64: '${value}'.`);
-    }
 }
 
 export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
@@ -176,7 +268,7 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
         prevStoreHash: Bytes32.from(prevStoreHashSlice),
         storeHash: Bytes32.from(storeHashSlice),
         verifiedContractStorageSlotsLength: UInt64.from(arrayLen),
-        verifiedContractStorageSlots: verifiedContractStorageSlots
+        verifiedContractStorageSlots: verifiedContractStorageSlots,
     };
 
     return provables;
