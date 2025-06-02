@@ -2,33 +2,17 @@ import { DynamicArray } from 'mina-attestations';
 import {
     Bool,
     Field,
-    InferJson,
-    InferProvable,
-    InferValue,
-    IsPure,
     Poseidon,
     Provable,
     Struct,
     UInt64,
     ZkProgram,
 } from 'o1js';
-import { Bytes20, Bytes32 } from './types';
 import {
     computeMerkleTreeDepthAndSize,
     getMerklePathFromLeaves as getMerklePathFromLeavesInner,
     getMerkleZeros,
 } from './merkleTree';
-//import { Constructor } from 'mina-attestations/build/src/types';
-
-type ProvableLike =
-    | { prototype: { toJSON: (...args: any[]) => any } }
-    | { provable: { toJSON: (...args: any[]) => any } };
-
-export type LeafContentsType = Record<string, ProvableLike>;
-
-export type LeafInstance<T extends LeafContentsType> = {
-    [K in keyof T]: T[K] extends new (...args: any[]) => infer I ? I : never;
-};
 
 type Constructor<T = any> = new (...args: any) => T;
 
@@ -50,7 +34,7 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
     const MerkleTreeLeafAttestor = ZkProgram({
         name: name,
         publicInput: MerkleTreeLeafAttestorInput,
-        publicOutput: Bool,
+        publicOutput: Field,
         methods: {
             compute: {
                 privateInputs: [],
@@ -113,7 +97,7 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
                         );
                     });
                     currentHash.assertEquals(rootHash);
-                    return { publicOutput: Bool(true) };
+                    return { publicOutput: currentHash };
                 },
             },
         },
@@ -154,7 +138,8 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
         value: typeof provableLeafType;
     };
 
-    const inputs = MerkleTreeLeafAttestorInput as unknown as MerkleTreeLeafAttestorInputConstructor;
+    const inputs =
+        MerkleTreeLeafAttestorInput as unknown as MerkleTreeLeafAttestorInputConstructor;
 
     return {
         MerkleTreeLeafAttestorInput: inputs,
