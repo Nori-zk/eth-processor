@@ -53,6 +53,7 @@ class EthInput extends Struct({
     verifiedContractStorageSlotsLength: UInt64,
     verifiedContractStorageSlots: VerifiedContractStorageSlots.provable,
 }) {}
+
 const EthVerifier = ZkProgram({
     name: 'EthVerifier',
     publicInput: EthInput,

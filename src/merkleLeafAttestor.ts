@@ -18,10 +18,8 @@ import {
     getMerklePathFromLeaves as getMerklePathFromLeavesInner,
     getMerkleZeros,
 } from './merkleTree';
+//import { Constructor } from 'mina-attestations/build/src/types';
 
-/**
- * Static shape expected by Provable-compatible types
- */
 type ProvableLike =
     | { prototype: { toJSON: (...args: any[]) => any } }
     | { provable: { toJSON: (...args: any[]) => any } };
@@ -32,32 +30,21 @@ export type LeafInstance<T extends LeafContentsType> = {
     [K in keyof T]: T[K] extends new (...args: any[]) => infer I ? I : never;
 };
 
-export function getMerkleLeafAttestorGenerator<
-    LeafContentsInnerType extends LeafContentsType
->(
+type Constructor<T = any> = new (...args: any) => T;
+
+export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
     treeDepth: number,
     name: string,
-    leafContentsInnerType: LeafContentsInnerType,
-    leafContentsHasher: (leaf: LeafInstance<LeafContentsInnerType>) => Field
+    provableLeafType: Constructor<TLeaf>,
+    leafContentsHasher: (leaf: TLeaf) => Field
 ) {
     const MerklePath = DynamicArray(Field, { maxLength: treeDepth });
-
-    const MerkleTreeLeaf = class extends Struct(
-        leafContentsInnerType
-    ) {} as unknown as {
-        new (
-            args: LeafInstance<LeafContentsInnerType>
-        ): LeafInstance<LeafContentsInnerType>;
-        prototype: LeafInstance<LeafContentsInnerType>;
-    };
-
-    type MerkleTreeLeafInstanceType = InstanceType<typeof MerkleTreeLeaf>;
 
     class MerkleTreeLeafAttestorInput extends Struct({
         rootHash: Field,
         path: MerklePath,
         index: UInt64,
-        value: Field,
+        value: provableLeafType,
     }) {}
 
     const MerkleTreeLeafAttestor = ZkProgram({
@@ -68,9 +55,9 @@ export function getMerkleLeafAttestorGenerator<
             compute: {
                 privateInputs: [],
                 async method(input: MerkleTreeLeafAttestorInput) {
-                    let { index, value, path, rootHash } = input;
+                    let { index, path, rootHash } = input; // value
 
-                    let currentHash = Poseidon.hash([value]);
+                    let currentHash = leafContentsHasher(input.value as TLeaf); //Poseidon.hash([value]);
 
                     Provable.asProver(() => {
                         Provable.log(`Finding index i ${index}`);
@@ -132,10 +119,10 @@ export function getMerkleLeafAttestorGenerator<
         },
     });
 
-    function buildLeaves(leafContents: MerkleTreeLeafInstanceType[]): Field[] {
+    function buildLeaves(leafContents: TLeaf[]): Field[] {
         return leafContents.map((leaf) =>
             leafContentsHasher(
-                leaf as unknown as LeafInstance<LeafContentsInnerType>
+                leaf //as unknown as LeafInstance<LeafContentsInnerType>
             )
         );
     }
@@ -155,11 +142,24 @@ export function getMerkleLeafAttestorGenerator<
         return merklePath;
     }
 
+    type MerkleTreeLeafAttestorInputConstructor = new (arg: {
+        rootHash: Field;
+        path: InstanceType<typeof MerklePath>;
+        index: UInt64;
+        value: TLeaf;
+    }) => {
+        rootHash: Field;
+        path: InstanceType<typeof MerklePath>;
+        index: UInt64;
+        value: typeof provableLeafType;
+    };
+
+    const inputs = MerkleTreeLeafAttestorInput as unknown as MerkleTreeLeafAttestorInputConstructor;
+
     return {
-        MerkleTreeLeaf,
-        MerkleTreeLeafAttestorInput,
+        MerkleTreeLeafAttestorInput: inputs,
         MerkleTreeLeafAttestor,
         buildLeaves,
-        getMerklePathFromLeaves
+        getMerklePathFromLeaves,
     };
 }

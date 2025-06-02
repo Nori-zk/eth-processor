@@ -1,4 +1,4 @@
-import { Field, Poseidon, Struct, UInt64 } from 'o1js';
+import { Bytes, Field, Poseidon, Provable, Struct, UInt64, UInt8 } from 'o1js';
 import {
     getMerkleLeafAttestorGenerator,
     LeafContentsType,
@@ -7,7 +7,11 @@ import {
 import { Bytes20, Bytes32 } from './types.js';
 import { sp1ConsensusMPTPlonkProof } from './test_examples/sp1-with-mpt/sp1ProofMessage.js';
 import { Logger, LogPrinter } from '@nori-zk/proof-conversion';
-import { computeMerkleTreeDepthAndSize, foldMerkleLeft, getMerkleZeros } from './merkleTree.js';
+import {
+    computeMerkleTreeDepthAndSize,
+    foldMerkleLeft,
+    getMerkleZeros,
+} from './merkleTree.js';
 
 const logger = new Logger('TestMerkle');
 new LogPrinter('[TestEthProcessor]', [
@@ -20,61 +24,73 @@ new LogPrinter('[TestEthProcessor]', [
     'verbose',
 ]);
 
-const leafContentsInnerType = {
-    address: Bytes20,
-    value: Bytes32,
-};
+class ProvableLeafValue extends Struct({
+    address: Bytes20.provable,
+    value: Bytes32.provable,
+}) {}
 
-class ASHIADSI extends Struct({ address: Bytes20, value: Bytes32 }) {}
-const a = new ASHIADSI({
-    address: Bytes20.fromHex('dummy'),
-    value: Bytes32.fromHex('dummy'),
-});
-a.address;
-a.value
+function hashLeafContents(leafContents: ProvableLeafValue) {
+  const addrBytes = leafContents.address.bytes;  // UInt8[]
+  const valueBytes = leafContents.value.bytes;  // UInt8[]
 
-function hashLeafContents(
-    leafContents: LeafInstance<typeof leafContentsInnerType>
-) {
-    const addrBytes = leafContents.address.toBytes();
-    const valueBytes = leafContents.value.toBytes();
+  // We want 20 bytes from addrBytes + 1 byte from valueBytes + remaining 31 bytes from valueBytes
 
-    const firstFieldBytes = new Uint8Array(32);
-    firstFieldBytes.set(addrBytes, 0); // first 20 bytes from address
-    firstFieldBytes[20] = valueBytes[0]; // 21st byte from value
+  // firstFieldBytes: 20 bytes from addrBytes + 1 byte from valueBytes
+  const firstFieldBytes: UInt8[] = [];
 
-    const secondFieldBytes = new Uint8Array(32);
-    secondFieldBytes.set(valueBytes.slice(1, 32), 0); // remaining 31 bytes from value
+  for (let i = 0; i < 20; i++) {
+    firstFieldBytes.push(addrBytes[i]);
+  }
+  firstFieldBytes.push(valueBytes[0]);
 
-    const firstField = Field.fromBytes(Array.from(firstFieldBytes));
-    const secondField = Field.fromBytes(Array.from(secondFieldBytes));
+  // Pad to 32 bytes if needed
+  while (firstFieldBytes.length < 32) {
+    firstFieldBytes.push(UInt8.zero);
+  }
 
-    return Poseidon.hash([firstField, secondField]);
+  // secondFieldBytes: remaining 31 bytes from valueBytes (1 to 31)
+  const secondFieldBytes: UInt8[] = [];
+  for (let i = 1; i < 32; i++) {
+    secondFieldBytes.push(valueBytes[i]);
+  }
+
+  // Pad to 32 bytes if needed
+  while (secondFieldBytes.length < 32) {
+    secondFieldBytes.push(UInt8.zero);
+  }
+
+  // Convert UInt8[] to Bytes (provable bytes)
+  const firstBytes = Bytes.from(firstFieldBytes);
+  const secondBytes = Bytes.from(secondFieldBytes);
+
+  const firstField = firstBytes.toFields()[0];
+  const secondField = secondBytes.toFields()[0];
+
+  return Poseidon.hash([firstField, secondField]);
 }
 
 const {
-    MerkleTreeLeaf,
     MerkleTreeLeafAttestorInput,
     MerkleTreeLeafAttestor,
     buildLeaves,
     getMerklePathFromLeaves,
-} = getMerkleLeafAttestorGenerator<typeof leafContentsInnerType>(
+} = getMerkleLeafAttestorGenerator(
     16,
     'MyMerkleVerifier',
-    leafContentsInnerType,
+    ProvableLeafValue,
     hashLeafContents
 );
 
-describe('Merkle Fixed Tests', () => {
-    test('test_large_slots', async () => {
-        // Build zk program
-
+describe('Merkle Attestor Test', () => {
+    test('pipeline', async () => {
+        // Analyse zk program
         const merkleTreeLeafAttestorAnalysis =
             await MerkleTreeLeafAttestor.analyzeMethods();
         logger.log(
             `MerkleTreeLeafAttestor analyze methods gates length '${merkleTreeLeafAttestorAnalysis.compute.gates.length}'.`
         );
 
+        // Build zk program
         const { verificationKey } = await MerkleTreeLeafAttestor.compile({
             forceRecompile: true,
         });
@@ -85,13 +101,12 @@ describe('Merkle Fixed Tests', () => {
         // Build contractStorageSlot from sp1 mpt message.
         const contractStorageSlots =
             sp1ConsensusMPTPlonkProof.contract_storage_slots.map((slot) => {
-                const a = new MerkleTreeLeaf({
-                    address: Bytes20.fromHex(slot.slot_key_address),
-                    value: Bytes32.fromHex(slot.value),
+                return new ProvableLeafValue({
+                    address: Bytes20.fromHex(slot.slot_key_address.slice(2)),
+                    value: Bytes32.fromHex(slot.value.slice(2)),
                 });
-
-                return a;
             });
+
         // Build leaves
         const leaves = buildLeaves(contractStorageSlots);
 
@@ -101,28 +116,41 @@ describe('Merkle Fixed Tests', () => {
 
         // Find Value
         const slotToFind = contractStorageSlots.find(
-            (leaf, idx) => idx === randomIndex
+            (_, idx) => idx === randomIndex
         );
 
         if (!slotToFind) throw new Error(`Slot at ${randomIndex} not found`);
-
-        const value = slotToFind.value;
-        const address = slotToFind.address;
 
         // Compute path
         const path = getMerklePathFromLeaves([...leaves], randomIndex);
 
         // Compute root
-        const { depth, paddedSize } = computeMerkleTreeDepthAndSize(leaves.length);
-        const rootHash = foldMerkleLeft(leaves, paddedSize, depth, getMerkleZeros(depth));
+        const { depth, paddedSize } = computeMerkleTreeDepthAndSize(
+            leaves.length
+        );
+        const rootHash = foldMerkleLeft(
+            leaves,
+            paddedSize,
+            depth,
+            getMerkleZeros(depth)
+        );
 
         // Build ZK input
-        const zkInput = new MerkleTreeLeafAttestorInput({
+        const input = new MerkleTreeLeafAttestorInput({
             rootHash,
             path,
             index: UInt64.from(randomIndex),
-            value
-        })
-        
+            value: slotToFind,
+        });
+
+           
+        logger.log(`Generated input ${JSON.stringify(input)}`);
+
+        let start = Date.now();
+        const output = await MerkleTreeLeafAttestor.compute(input);
+        let durationMs = Date.now() - start;
+        logger.log(`MerkleValidator.compute took ${durationMs}ms`);
+
+        expect(output.proof.publicOutput.toBoolean()).toBe(true);
     });
 });
