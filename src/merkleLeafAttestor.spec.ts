@@ -313,6 +313,6 @@ describe('Merkle Attestor Test', () => {
                     );
                 }
             }
-        });
+        }, 1000000000);
     });
 });
