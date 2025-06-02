@@ -7,8 +7,8 @@ import {
     foldMerkleLeft,
     getMerklePathFromTree,
     computeMerkleRootFromPath,
-    getMerklePath,
-} from './merkle.js';
+    getMerklePathFromLeaves,
+} from './merkleTree.js';
 import { Bytes20, Bytes32 } from './types.js';
 
 function dummyAddress(byte: number): Bytes20 {
@@ -56,7 +56,7 @@ function fullMerkleTest(
     const root = foldMerkleLeft(leavesClone, paddedSize, depth, zeros);
 
     const leavesForPath = leaves.slice();
-    const path = getMerklePath(
+    const path = getMerklePathFromLeaves(
         leavesForPath,
         paddedSize,
         depth,
@@ -147,7 +147,7 @@ describe('Merkle Fixed Tests', () => {
             for (let index = 0; index < nLeaves; index++) {
                 const leavesForPath = leaves.slice();
 
-                const pathFold = getMerklePath(
+                const pathFold = getMerklePathFromLeaves(
                     leavesForPath,
                     paddedSize,
                     depth,
@@ -172,5 +172,86 @@ describe('Merkle Fixed Tests', () => {
                 console.log(`     ✅ [nLeaves=${nLeaves}, index=${index}] OK`);
             }
         }
+    });
+
+    test('huge_timed_test', () => {
+        const nLeaves = 1 << 16;
+
+        console.log(`\n→ Testing with ${nLeaves} leaves`);
+
+        console.time('01. getMerkleZeros');
+        const maxDepth = Math.ceil(Math.log2(nLeaves)) || 1;
+        const zeros = getMerkleZeros(maxDepth);
+        console.timeEnd('01. getMerkleZeros');
+
+        console.time('02. Generate dummy pairs');
+        const pairs: Array<[Bytes20, Bytes32]> = [];
+        for (let i = 0; i < nLeaves; i++) {
+            pairs.push([dummyAddress(i), dummyValue(i)]);
+        }
+        console.timeEnd('02. Generate dummy pairs');
+
+        console.time('03. buildLeaves');
+        const leaves = buildLeaves(pairs);
+        console.timeEnd('03. buildLeaves');
+
+        console.time('04. compute depth and padded size');
+        const { depth, paddedSize } = computeMerkleTreeDepthAndSize(nLeaves);
+        console.timeEnd('04. compute depth and padded size');
+        console.log(`   depth=${depth}, paddedSize=${paddedSize}`);
+
+        console.time('05. foldMerkleLeft');
+        const rootViaFold = foldMerkleLeft(
+            leaves.slice(),
+            paddedSize,
+            depth,
+            zeros
+        );
+        console.timeEnd('05. foldMerkleLeft');
+        console.log(`   rootViaFold = ${rootViaFold}`);
+
+        console.time('06. buildMerkleTree');
+        const merkleTree = buildMerkleTree(leaves, paddedSize, depth, zeros);
+        console.timeEnd('06. buildMerkleTree');
+        console.log(`   rootViaBuild = ${merkleTree[0][0]}`);
+
+        expect(merkleTree[0][0].equals(rootViaFold).toBoolean()).toBe(true);
+
+        const expectedPadded = leaves.slice();
+        while (expectedPadded.length < paddedSize) {
+            expectedPadded.push(Field(0));
+        }
+        expect(merkleTree[depth]).toEqual(expectedPadded);
+
+        const index = nLeaves / 2;
+
+        console.time('07. getMerklePathFromLeaves');
+        const pathFold = getMerklePathFromLeaves(
+            leaves.slice(),
+            paddedSize,
+            depth,
+            index,
+            zeros
+        );
+        console.timeEnd('07. getMerklePathFromLeaves');
+
+        console.time('08. getMerklePathFromTree');
+        const pathBuild = getMerklePathFromTree(merkleTree, index);
+        console.timeEnd('08. getMerklePathFromTree');
+
+        expect(pathFold).toEqual(pathBuild);
+
+        console.time('09. recompute root from path');
+        const leafHash = leaves[index];
+        const recomputedRoot = computeMerkleRootFromPath(
+            leafHash,
+            index,
+            pathFold
+        );
+        console.timeEnd('09. recompute root from path');
+
+        expect(recomputedRoot.equals(rootViaFold).toBoolean()).toBe(true);
+
+        console.log(`     ✅ [nLeaves=${nLeaves}, index=${index}] OK`);
     });
 });

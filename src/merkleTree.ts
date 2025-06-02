@@ -86,7 +86,7 @@ export function buildMerkleTree(
                 parentLevel[i] = zeros[level];
             } else {
                 const rightIdx = leftIdx + 1;
-                // Both nodes are non-dummy — hash their concatenation
+                // Atleast one of left and right are real.
                 parentLevel[i] = Poseidon.hash([
                     childLevel[leftIdx],
                     childLevel[rightIdx],
@@ -143,7 +143,7 @@ export function foldMerkleLeft(
                 // Both left and right are dummy nodes — use cached zero for this level
                 leaves[i] = zeros[level];
             } else {
-                // Both nodes are non-dummy (leftIdx < nNonDummyNodes)
+                // Atleast one of left and right are real.
                 const rightIdx = leftIdx + 1;
                 leaves[i] = Poseidon.hash([leaves[leftIdx], leaves[rightIdx]]);
             }
@@ -157,7 +157,8 @@ export function foldMerkleLeft(
 }
 
 /**
- * Compute the Merkle path (sibling nodes) for a given leaf index.
+ * Compute the Merkle path (sibling nodes) for a given leaf index from 
+ * a list of leaves.
  *
  * This function mutates and extends the provided `merkleLeaves` array
  * by padding it to `paddedSize` with zeros, then folds the tree upwards,
@@ -172,7 +173,7 @@ export function foldMerkleLeft(
  * @param zeros Array of zero hashes per level for dummy nodes (length >= depth + 1)
  * @returns Array of sibling hashes (Field[]) forming the Merkle path
  */
-export function getMerklePath(
+export function getMerklePathFromLeaves(
     merkleLeaves: Field[],
     paddedSize: number,
     depth: number,
@@ -218,7 +219,7 @@ export function getMerklePath(
                 merkleNodes[i] = zeros[level];
             } else {
                 const rightIdx = leftIdx + 1;
-                // Both left and right are considered real or padded but safe to hash
+                // Atleast one of left and right are real.
                 merkleNodes[i] = Poseidon.hash([
                     merkleNodes[leftIdx],
                     merkleNodes[rightIdx],

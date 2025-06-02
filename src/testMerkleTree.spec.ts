@@ -198,6 +198,7 @@ describe('MerkleTree', () => {
             index: UInt64.from(index),
             value: list[index],
         });
+        
         logger.log(`Generated input ${JSON.stringify(input)}`);
 
         start = Date.now();
