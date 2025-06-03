@@ -1,4 +1,4 @@
-import { PlonkProof } from '../types';
+import { PlonkProof } from '../types.js';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const sp1PlonkProof: PlonkProof = require('./sp1Proof.json');

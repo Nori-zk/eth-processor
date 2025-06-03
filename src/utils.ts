@@ -4,10 +4,7 @@ import { UInt64, UInt8 } from 'o1js';
 import { Logger, wordToBytes } from '@nori-zk/proof-conversion';
 import { EthVerifier } from './EthVerifier.js';
 import { EthProcessor } from './EthProcessor.js';
-import {
-    PlonkProof,
-    Bytes32,
-} from './types.js';
+import { PlonkProof, Bytes32 } from './types.js';
 import { ethVerifierVkHash } from './integrity/EthVerifier.VKHash.js';
 import { ethProcessorVkHash } from './integrity/EthProcessor.VKHash.js';
 
@@ -99,13 +96,35 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
         proofTotalLength
     );
 
+    console.log('inputSlotSlice bytes:', Array.from(inputSlotSlice));
+    console.log('inputStoreHashSlice bytes:', Array.from(inputStoreHashSlice));
+    console.log('outputSlotSlice bytes:', Array.from(outputSlotSlice));
+    console.log(
+        'outputStoreHashSlice bytes:',
+        Array.from(outputStoreHashSlice)
+    );
+    console.log(
+        'executionStateRootSlice bytes:',
+        Array.from(executionStateRootSlice)
+    );
+    console.log(
+        'verifiedContractStorageSlotsRootSlice bytes:',
+        Array.from(verifiedContractStorageSlotsRootSlice)
+    );
+    console.log(
+        'nextSyncCommitteeHashSlice bytes:',
+        Array.from(nextSyncCommitteeHashSlice)
+    );
+
     const provables = {
         inputSlot: UInt64.from(inputSlot),
         inputStoreHash: Bytes32.from(inputStoreHashSlice),
         outputSlot: UInt64.from(outputSlot),
         outputStoreHash: Bytes32.from(outputStoreHashSlice),
         executionStateRoot: Bytes32.from(executionStateRootSlice),
-        verifiedContractDepositsRoot: Bytes32.from(verifiedContractStorageSlotsRootSlice),
+        verifiedContractDepositsRoot: Bytes32.from(
+            verifiedContractStorageSlotsRootSlice
+        ),
         nextSyncCommitteeHash: Bytes32.from(nextSyncCommitteeHashSlice),
     };
 

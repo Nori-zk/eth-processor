@@ -6,7 +6,7 @@ import {
 import { MinaEthProcessorSubmitter } from './proofSubmitter.js';
 import { wait } from './txWait.js';
 import { PrivateKey } from 'o1js';
-import { decodeProof } from './utils.js';
+import { decodeConsensusMptProof } from './utils.js';
 
 new LogPrinter('[TestEthProcessor]', [
     'log',
@@ -41,8 +41,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         const proofArgument = buildExampleProofCreateArgument();
 
         // Deploy contract
-        const decoded = decodeProof(proofArgument.sp1PlonkProof);
-        await proofSubmitter.deployContract(decoded.prevStoreHash);
+        const decoded = decodeConsensusMptProof(proofArgument.sp1PlonkProof);
+
+        await proofSubmitter.deployContract(decoded.inputStoreHash);
 
         // Build proof.
         const ethProof = await proofSubmitter.createProof(proofArgument);
@@ -73,8 +74,8 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         const seriesExamples = buildExampleProofSeriesCreateArguments();
 
         // Deploy contract
-        const decoded = decodeProof(seriesExamples[0].sp1PlonkProof);
-        await proofSubmitter.deployContract(decoded.prevStoreHash);
+        const decoded = decodeConsensusMptProof(seriesExamples[0].sp1PlonkProof);
+        await proofSubmitter.deployContract(decoded.inputStoreHash);
 
         // Build and submit proofs
         let i = 1;
@@ -112,8 +113,8 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         const seriesExamples = buildExampleProofSeriesCreateArguments();
 
         // Deploy contract
-        const decoded = decodeProof(seriesExamples[0].sp1PlonkProof);
-        await proofSubmitter.deployContract(decoded.prevStoreHash);
+        const decoded = decodeConsensusMptProof(seriesExamples[0].sp1PlonkProof);
+        await proofSubmitter.deployContract(decoded.inputStoreHash);
 
         // Build and submit proofs
         logger.log(
