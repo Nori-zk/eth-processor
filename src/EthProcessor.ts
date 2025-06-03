@@ -89,7 +89,7 @@ export class EthProcessor extends SmartContract {
     // }
 
     @method async update(ethProof: EthProofType) {
-        const proofHead = ethProof.publicInput.newHead;
+        const proofHead = ethProof.publicInput.outputSlot;
         const executionStateRoot = ethProof.publicInput.executionStateRoot;
         const currentSlot = this.latestHead.getAndRequireEquals();
 
@@ -97,7 +97,7 @@ export class EthProcessor extends SmartContract {
             Provable.log('Current slot', currentSlot);
         });
 
-        const prevStoreHash = StoreHash.fromBytes32(ethProof.publicInput.prevStoreHash);
+        const prevStoreHash = StoreHash.fromBytes32(ethProof.publicInput.inputStoreHash);
 
         // Verification of the previous store hash higher byte.
         prevStoreHash.highByteField.assertEquals(

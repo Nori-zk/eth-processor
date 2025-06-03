@@ -1,6 +1,5 @@
-import { Bool, Bytes, Field, Struct, UInt8 } from 'o1js';
+import { Bytes, Field, Struct, UInt8 } from 'o1js';
 import { EthVerifier } from './EthVerifier';
-import { DynamicArray } from 'mina-attestations';
 
 export type Constructor<T = any> = new (...args: any) => T;
 
@@ -93,57 +92,3 @@ export class StoreHash extends Struct({
         });
     }
 }
-
-export class VerifiedContractStorageSlot extends Struct({
-    key: Bytes32.provable,
-    slotKeyAddress: Bytes20.provable,
-    value: Bytes32.provable,
-    contractAddress: Bytes20.provable,
-}) {
-    static fromAbiElementBytes(elementBytes: Uint8Array<ArrayBuffer>) {
-        /*
-            struct VerifiedContractStorageSlot {
-                bytes32 key;             //0-31    [0  ..32 ]
-                address slotKeyAddress;  //32-63   [32 ..64 ] address: equivalent to uint160, zero padding on LHS
-                bytes32 value;           //64-95   [64 ..96 ]
-                address contractAddress; //96-127  [96 ..128] address: equivalent to uint160, zero padding on LHS
-            } 
-        */
-        const key = elementBytes.slice(0, 32);
-        const slotKeyAddress = elementBytes.slice(44, 64);
-        const value = elementBytes.slice(64, 96);
-        const contractAddress = elementBytes.slice(108, 128);
-        return new this({
-            key: Bytes32.from(key),
-            slotKeyAddress: Bytes20.from(slotKeyAddress),
-            value: Bytes32.from(value),
-            contractAddress: Bytes20.from(contractAddress),
-        });
-    }
-
-    static bytes(input: VerifiedContractStorageSlot) {
-        let bytes: UInt8[] = [];
-        bytes = bytes.concat(input.key.bytes);
-        bytes = bytes.concat(
-            ...[
-                ...new Array(12).fill(0).map((_) => UInt8.from(0)),
-                input.slotKeyAddress.bytes,
-            ]
-        );
-        bytes = bytes.concat(input.value.bytes);
-        bytes = bytes.concat(
-            ...[
-                ...new Array(12).fill(0).map((_) => UInt8.from(0)),
-                input.contractAddress.bytes,
-            ]
-        );
-        return bytes;
-    }
-}
-
-export const VerifiedContractStorageSlotsMaxLength = 1;
-export const VerifiedContractStorageSlots = DynamicArray(
-    VerifiedContractStorageSlot,
-    { maxLength: VerifiedContractStorageSlotsMaxLength }
-);
-

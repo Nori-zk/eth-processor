@@ -9,7 +9,7 @@ import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
 import { EthProcessor, EthProofType } from './EthProcessor.js';
 import { EthVerifier, EthInput } from './EthVerifier.js';
 import { CreateProofArgument, VerificationKey } from './types.js';
-import { compileAndVerifyContracts, decodeConsensusMptProof, decodeProof } from './utils.js';
+import { compileAndVerifyContracts, decodeConsensusMptProof } from './utils.js';
 import { Bytes32, StoreHash } from './types.js';
 
 const logger = new Logger('EthProcessorSubmitter');
@@ -146,7 +146,7 @@ export class MinaEthProcessorSubmitter {
                 {
                     sender: this.senderPrivateKey.toPublicKey(),
                     fee: this.txFee,
-                    memo: `State for slot ${ethProof.publicInput.newHead.toString()} set`,
+                    memo: `State for slot ${ethProof.publicInput.outputSlot.toString()} set`,
                 },
                 async () => {
                     await this.zkApp.update(ethProof);
