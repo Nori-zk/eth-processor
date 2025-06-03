@@ -7,7 +7,7 @@ import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { rootDir, compileAndVerifyContracts } from '../utils.js';
 import { EthProcessor } from '../EthProcessor.js';
-import { Bytes32, StoreHash } from '../types.js';
+import { Bytes32, Bytes32FieldPair } from '../types.js';
 
 const logger = new Logger('Deploy');
 
@@ -120,7 +120,7 @@ async function deploy() {
                 );
                 await zkApp.deploy({
                     verificationKey: ethProcessorVerificationKey,
-                    storeHash: StoreHash.fromBytes32(storeHash),
+                    storeHash: Bytes32FieldPair.fromBytes32(storeHash),
                 });
             } else {
                 logger.log('Deploying with an updated verification key.');

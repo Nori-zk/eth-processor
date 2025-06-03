@@ -15,7 +15,7 @@ import {
 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
 import { EthProof } from './EthVerifier.js';
-import { Bytes32, StoreHash } from './types.js';
+import { Bytes32, Bytes32FieldPair } from './types.js';
 
 const logger = new Logger('EthProcessor');
 
@@ -37,21 +37,25 @@ class VerificationKey extends Struct({
 
 class DeployArgsWithStoreHash extends Struct({
     verificationKey: VerificationKey,
-    storeHash: StoreHash,
+    storeHash: Bytes32FieldPair,
 }) {}
 
 class DeployArgsWithoutStoreHash extends Struct({
     verificationKey: VerificationKey,
 }) {}
 
-export type EthProcessorDeployArgs = DeployArgsWithStoreHash | DeployArgsWithoutStoreHash;
+export type EthProcessorDeployArgs =
+    | DeployArgsWithStoreHash
+    | DeployArgsWithoutStoreHash;
 
 export class EthProcessor extends SmartContract {
+    @state(PublicKey) admin = State<PublicKey>();
     @state(Field) verifiedStateRoot = State<Field>(); // todo make PackedString
     @state(UInt64) latestHead = State<UInt64>();
-    @state(PublicKey) admin = State<PublicKey>();
     @state(Field) latestHeliusStoreInputHashHighByte = State<Field>();
     @state(Field) latestHeliusStoreInputHashLowerBytes = State<Field>();
+    @state(Field) latestVerifiedContractDepositsRootHighByte = State<Field>();
+    @state(Field) latestVerifiedContractDepositsRootLowerBytes = State<Field>();
 
     //todo
     // events = { 'executionStateRoot-set': Bytes32.provable };//todo change type, if events even possible
@@ -70,12 +74,14 @@ export class EthProcessor extends SmartContract {
         // Could we deploy with a proof?
 
         const { verificationKey } = args;
-        super.deploy(
-            { verificationKey }
-        );
+        super.deploy({ verificationKey });
         if ('storeHash' in args) {
-            this.latestHeliusStoreInputHashHighByte.set(args.storeHash.highByteField);
-            this.latestHeliusStoreInputHashLowerBytes.set(args.storeHash.lowerBytesField);
+            this.latestHeliusStoreInputHashHighByte.set(
+                args.storeHash.highByteField
+            );
+            this.latestHeliusStoreInputHashLowerBytes.set(
+                args.storeHash.lowerBytesField
+            );
         }
 
         //this.verifiedStateRoot.set(Field(2)); // Need to prove this otherwise its bootstrapped in an invalid state
@@ -93,11 +99,32 @@ export class EthProcessor extends SmartContract {
         const executionStateRoot = ethProof.publicInput.executionStateRoot;
         const currentSlot = this.latestHead.getAndRequireEquals();
 
+        const newStoreHash = Bytes32FieldPair.fromBytes32(
+            ethProof.publicInput.outputStoreHash
+        );
+
+        Provable.asProver(() => {
+            Provable.log('Proof input store hash values were:');
+            Provable.log(ethProof.publicInput.outputStoreHash.bytes[0].value);
+            Provable.log(
+                ethProof.publicInput.outputStoreHash.bytes
+                    .slice(1, 33)
+                    .map((b) => b.value)
+            );
+            Provable.log(
+                'Public outputs created:',
+                newStoreHash.highByteField,
+                newStoreHash.lowerBytesField
+            );
+        });
+
         Provable.asProver(() => {
             Provable.log('Current slot', currentSlot);
         });
 
-        const prevStoreHash = StoreHash.fromBytes32(ethProof.publicInput.inputStoreHash);
+        const prevStoreHash = Bytes32FieldPair.fromBytes32(
+            ethProof.publicInput.inputStoreHash
+        );
 
         // Verification of the previous store hash higher byte.
         prevStoreHash.highByteField.assertEquals(
@@ -133,19 +160,35 @@ export class EthProcessor extends SmartContract {
             'Proof head must be greater than current head.'
         );
 
+        // Verification that next sync commitee is non zero (could brick the bridge head otherwise)
+        let nextSyncCommitteeZeroAcc = new Field(0);
+        for (let i = 0; i < 32; i++) {
+            nextSyncCommitteeZeroAcc = nextSyncCommitteeZeroAcc.add(ethProof.publicInput.nextSyncCommitteeHash.bytes[i].value);
+        }
+        nextSyncCommitteeZeroAcc.assertNotEquals(new Field(0));
+
         // Verify transition proof.
         ethProof.verify();
 
+        // Pack the verifiedContractDepositsRoot into a pair of fields
+        const verifiedContractDepositsRoot = Bytes32FieldPair.fromBytes32(ethProof.publicInput.verifiedContractDepositsRoot);
+        
         // Update contract values
         this.latestHead.set(proofHead);
         this.verifiedStateRoot.set(
             Poseidon.hashPacked(Bytes32.provable, executionStateRoot)
         );
         this.latestHeliusStoreInputHashHighByte.set(
-            ethProof.publicOutput.highByteField
+            newStoreHash.highByteField
         );
         this.latestHeliusStoreInputHashLowerBytes.set(
-            ethProof.publicOutput.lowerBytesField
+            newStoreHash.lowerBytesField
+        );
+        this.latestVerifiedContractDepositsRootHighByte.set(
+            verifiedContractDepositsRoot.highByteField
+        );
+        this.latestVerifiedContractDepositsRootLowerBytes.set(
+            verifiedContractDepositsRoot.lowerBytesField
         );
     }
 }

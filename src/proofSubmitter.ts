@@ -10,7 +10,7 @@ import { EthProcessor, EthProofType } from './EthProcessor.js';
 import { EthVerifier, EthInput } from './EthVerifier.js';
 import { CreateProofArgument, VerificationKey } from './types.js';
 import { compileAndVerifyContracts, decodeConsensusMptProof } from './utils.js';
-import { Bytes32, StoreHash } from './types.js';
+import { Bytes32, Bytes32FieldPair } from './types.js';
 
 const logger = new Logger('EthProcessorSubmitter');
 
@@ -90,7 +90,7 @@ export class MinaEthProcessorSubmitter {
                 AccountUpdate.fundNewAccount(
                     this.senderPrivateKey.toPublicKey()
                 );
-                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: StoreHash.fromBytes32(storeHash)});
+                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: Bytes32FieldPair.fromBytes32(storeHash)});
             }
         );
         logger.log('Deploy transaction created successfully. Proving...');

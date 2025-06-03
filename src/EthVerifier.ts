@@ -17,7 +17,7 @@ import {
 import { bridgeHeadNoriSP1HeliosProgramPi0 } from './integrity/BridgeHead.NoriSP1HeliosProgram.pi0.js';
 import { proofConversionSP1ToPlonkPO2 } from './integrity/ProofConversion.sp1ToPlonk.po2.js';
 import { proofConversionSP1ToPlonkVkData } from './integrity/ProofConversion.sp1ToPlonk.vkData.js';
-import { Bytes32, StoreHash } from './types.js';
+import { Bytes32, Bytes32FieldPair } from './types.js';
 
 class EthInput extends Struct({
     inputSlot: UInt64,
@@ -25,14 +25,14 @@ class EthInput extends Struct({
     outputSlot: UInt64,
     outputStoreHash: Bytes32.provable,
     executionStateRoot: Bytes32.provable,
-    verifiedContractStorageSlots: Bytes32.provable,
+    verifiedContractDepositsRoot: Bytes32.provable,
     nextSyncCommitteeHash: Bytes32.provable,
 }) {}
 
 const EthVerifier = ZkProgram({
     name: 'EthVerifier',
     publicInput: EthInput,
-    publicOutput: StoreHash,
+    publicOutput: Field,
     methods: {
         compute: {
             privateInputs: [NodeProofLeft],
@@ -66,10 +66,10 @@ const EthVerifier = ZkProgram({
                 let bytes: UInt8[] = [];
                 bytes = bytes.concat(input.inputSlot.toBytes());
                 bytes = bytes.concat(input.inputStoreHash.bytes);
-                (bytes = bytes.concat(input.outputSlot.toBytes())),
-                    (bytes = bytes.concat(input.outputStoreHash.bytes));
+                bytes = bytes.concat(input.outputSlot.toBytes()),
+                bytes = bytes.concat(input.outputStoreHash.bytes);
                 bytes = bytes.concat(input.executionStateRoot.bytes);
-                bytes = bytes.concat(input.verifiedContractStorageSlots.bytes);
+                bytes = bytes.concat(input.verifiedContractDepositsRoot.bytes);
                 bytes = bytes.concat(input.nextSyncCommitteeHash.bytes);
 
                 // Check that zkprograminput is same as passed to the SP1 program
@@ -89,25 +89,8 @@ const EthVerifier = ZkProgram({
 
                 piDigest.assertEquals(proof.publicOutput.rightOut);
 
-                const storeHash = StoreHash.fromBytes32(input.outputStoreHash);
-
-                Provable.asProver(() => {
-                    Provable.log('Proof input store hash values were:');
-                    Provable.log(input.outputStoreHash.bytes[0].value);
-                    Provable.log(
-                        input.outputStoreHash.bytes
-                            .slice(1, 33)
-                            .map((b) => b.value)
-                    );
-                    Provable.log(
-                        'Public outputs created:',
-                        storeHash.highByteField,
-                        storeHash.lowerBytesField
-                    );
-                });
-
                 return {
-                    publicOutput: storeHash,
+                    publicOutput: new Field(0),
                 };
             },
         },

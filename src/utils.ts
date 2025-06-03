@@ -105,7 +105,7 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
         outputSlot: UInt64.from(outputSlot),
         outputStoreHash: Bytes32.from(outputStoreHashSlice),
         executionStateRoot: Bytes32.from(executionStateRootSlice),
-        verifiedContractStorageSlots: Bytes32.from(verifiedContractStorageSlotsRootSlice),
+        verifiedContractDepositsRoot: Bytes32.from(verifiedContractStorageSlotsRootSlice),
         nextSyncCommitteeHash: Bytes32.from(nextSyncCommitteeHashSlice),
     };
 
