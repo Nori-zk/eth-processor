@@ -43,25 +43,25 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
 
                     let currentHash = leafContentsHasher(input.value as TLeaf); //Poseidon.hash([value]);
 
-                    Provable.asProver(() => {
+                    /*Provable.asProver(() => {
                         Provable.log(`Finding index i ${index}`);
                     });
 
                     Provable.asProver(() => {
                         Provable.log(`Generated hash of value ${currentHash}`);
-                    });
+                    });*/
 
                     path.forEach((sibling, isDummy, i) => {
                         const bitPath = index.value.toBits(path.maxLength);
                         const bit = bitPath[i];
 
-                        Provable.asProver(() => {
+                        /*Provable.asProver(() => {
                             Provable.log(
                                 `Path index i ${i}, bit ${bit}, bit path ${bitPath.map(
                                     (i) => (i.toBoolean() ? 1 : 0)
                                 )} isDummy ${isDummy}`
                             );
-                        });
+                        });*/
 
                         const left = Provable.if(
                             bit,
@@ -77,11 +77,11 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
                         );
                         const nextHash = Poseidon.hash([left, right]);
 
-                        Provable.asProver(() => {
+                        /*Provable.asProver(() => {
                             Provable.log(
                                 `Path index i ${i}, left ${left}, right ${right}`
                             );
-                        });
+                        });*/
 
                         currentHash = Provable.if(
                             isDummy,
@@ -91,11 +91,11 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
                         );
                     });
 
-                    Provable.asProver(() => {
+                    /*Provable.asProver(() => {
                         Provable.log(
                             `Got to assert root ${rootHash}, current ${currentHash}`
                         );
-                    });
+                    });*/
                     currentHash.assertEquals(rootHash);
                     return { publicOutput: currentHash };
                 },

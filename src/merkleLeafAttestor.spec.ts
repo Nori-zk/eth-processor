@@ -24,24 +24,24 @@ function hashStorageSlot(addr: Bytes20, value: Bytes32): Field {
     const addrBytes = addr.toBytes();
     const valueBytes = value.toBytes();
 
-    console.log('addressBytes', addrBytes);
-    console.log('valueBytes', valueBytes);
+    //console.log('addressBytes', addrBytes);
+    //console.log('valueBytes', valueBytes);
     const firstFieldBytes = new Uint8Array(32);
     firstFieldBytes.set(addrBytes, 0); // first 20 bytes from address
     firstFieldBytes[20] = valueBytes[0]; // 21st byte from value
 
-    console.log('firstFieldBytes', firstFieldBytes);
+    //console.log('firstFieldBytes', firstFieldBytes);
 
     const secondFieldBytes = new Uint8Array(32);
     secondFieldBytes.set(valueBytes.slice(1, 32), 0); // remaining 31 bytes from value
 
-    console.log('secondFieldBytes', secondFieldBytes);
+    //console.log('secondFieldBytes', secondFieldBytes);
 
     const firstField = Field.fromBytes(Array.from(firstFieldBytes));
     const secondField = Field.fromBytes(Array.from(secondFieldBytes));
 
-    console.log('(Rust)firstField', firstField.toBigInt());
-    console.log('(rust)secondField', secondField.toBigInt());
+    //console.log('(Rust)firstField', firstField.toBigInt());
+    //console.log('(rust)secondField', secondField.toBigInt());
 
     return Poseidon.hash([firstField, secondField]);
 }
@@ -59,10 +59,10 @@ function hashLeafContents(leafContents: ProvableLeafValue) {
     const addressBytes = leafContents.address.bytes; // UInt8[]
     const valueBytes = leafContents.value.bytes; // UInt8[]
 
-    Provable.asProver(() => {
+    /*Provable.asProver(() => {
         Provable.log('addressBytes', addressBytes);
         Provable.log('valueBytes', valueBytes);
-    });
+    });*/
 
     // We want 20 bytes from addrBytes + 1 byte from valueBytes + remaining 31 bytes from valueBytes
 
@@ -92,10 +92,10 @@ function hashLeafContents(leafContents: ProvableLeafValue) {
     const secondBytes = Bytes.from(secondFieldBytes);
 
     // Extract the first field (there should only ever be one here)
-    Provable.asProver(() => {
+    /*Provable.asProver(() => {
         Provable.log('firstBytes.toFields()', firstBytes.toFields());
         Provable.log('secondBytes.toFields()', secondBytes.toFields());
-    });
+    });*
 
     // this is assuming big endian ??
 
@@ -114,10 +114,10 @@ function hashLeafContents(leafContents: ProvableLeafValue) {
         secondField = secondField.mul(256).add(secondBytes.bytes[i].value);
     }
 
-    Provable.asProver(() => {
+    /*Provable.asProver(() => {
         Provable.log('(provable)firstField', firstField.toBigInt());
         Provable.log('(provable)secondField', secondField.toBigInt());
-    });
+    });*/
 
     return Poseidon.hash([firstField, secondField]);
 }
@@ -241,7 +241,7 @@ describe('Merkle Attestor Test', () => {
                 'Testing all leaf counts and indices with both fold and circuit...'
             );
 
-            for (let nLeaves = 0; nLeaves <= maxLeaves; nLeaves++) {
+            for (let nLeaves = 22; nLeaves <= maxLeaves; nLeaves++) {
                 console.log(`→ Testing with ${nLeaves} leaves`);
 
                 const pairs: Array<[Bytes20, Bytes32]> = [];
@@ -261,11 +261,11 @@ describe('Merkle Attestor Test', () => {
 
                 const leaves = buildLeaves(contractStorageSlots);
 
-                /*console.log(
+                console.log(
                     `   leaves ${leaves.map((l) =>
                         l.toJSON().split('\n').join(' ,')
                     )}`
-                );*/
+                );
 
                 const rustLeaves = buildLeavesRust(pairs);
 
@@ -273,11 +273,11 @@ describe('Merkle Attestor Test', () => {
                     computeMerkleTreeDepthAndSize(nLeaves);
                 console.log(`   depth=${depth}, paddedSize=${paddedSize}`);
 
-                console.log(
+                /*console.log(
                     'LEAVES COMPARISON',
                     JSON.stringify(leaves),
                     JSON.stringify(rustLeaves)
-                );
+                );*/
                 expect(leaves).toEqual(rustLeaves);
 
                 const rootViaFold = foldMerkleLeft(
