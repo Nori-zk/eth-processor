@@ -1,22 +1,13 @@
 import { DynamicArray } from 'mina-attestations';
-import {
-    Bool,
-    Field,
-    Poseidon,
-    Provable,
-    Struct,
-    UInt64,
-    ZkProgram,
-} from 'o1js';
+import { Field, Poseidon, Provable, Struct, UInt64, ZkProgram } from 'o1js';
 import {
     computeMerkleTreeDepthAndSize,
     getMerklePathFromLeaves as getMerklePathFromLeavesInner,
     getMerkleZeros,
-} from './merkleTree';
+} from './merkleTree.js';
+import { Constructor } from '../types.js';
 
-type Constructor<T = any> = new (...args: any) => T;
-
-export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
+export function merkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
     treeDepth: number,
     name: string,
     provableLeafType: Constructor<TLeaf>,
@@ -41,7 +32,7 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
                 async method(input: MerkleTreeLeafAttestorInput) {
                     let { index, path, rootHash } = input; // value
 
-                    let currentHash = leafContentsHasher(input.value as TLeaf); //Poseidon.hash([value]);
+                    let currentHash = leafContentsHasher(input.value as TLeaf);
 
                     /*Provable.asProver(() => {
                         Provable.log(`Finding index i ${index}`);
@@ -106,7 +97,7 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
     function buildLeaves(leafContents: TLeaf[]): Field[] {
         return leafContents.map((leaf) =>
             leafContentsHasher(
-                leaf //as unknown as LeafInstance<LeafContentsInnerType>
+                leaf
             )
         );
     }
@@ -136,7 +127,7 @@ export function getMerkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
         path: InstanceType<typeof MerklePath>;
         index: UInt64;
         value: typeof provableLeafType;
-    };
+    }; // CHECKME is this return type actually accurate?
 
     const inputs =
         MerkleTreeLeafAttestorInput as unknown as MerkleTreeLeafAttestorInputConstructor;

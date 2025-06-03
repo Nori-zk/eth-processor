@@ -2,6 +2,8 @@ import { Bool, Bytes, Field, Struct, UInt8 } from 'o1js';
 import { EthVerifier } from './EthVerifier';
 import { DynamicArray } from 'mina-attestations';
 
+export type Constructor<T = any> = new (...args: any) => T;
+
 export interface Proof {
     Plonk: {
         encoded_proof: string;

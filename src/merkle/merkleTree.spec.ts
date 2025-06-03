@@ -1,5 +1,4 @@
-import { Field, Poseidon } from 'o1js';
-
+import { Field } from 'o1js';
 import {
     computeMerkleTreeDepthAndSize,
     getMerkleZeros,
@@ -9,46 +8,15 @@ import {
     computeMerkleRootFromPath,
     getMerklePathFromLeaves,
 } from './merkleTree.js';
-import { Bytes20, Bytes32 } from './types.js';
-
-function dummyAddress(byte: number): Bytes20 {
-    const arr = new Uint8Array(20).fill(byte);
-    return Bytes20.from(arr);
-}
-
-function dummyValue(byte: number): Bytes32 {
-    const arr = new Uint8Array(32).fill(byte);
-    return Bytes32.from(arr);
-}
-
-function hashStorageSlot(addr: Bytes20, value: Bytes32): Field {
-    const addrBytes = addr.toBytes();
-    const valueBytes = value.toBytes();
-
-    const firstFieldBytes = new Uint8Array(32);
-    firstFieldBytes.set(addrBytes, 0); // first 20 bytes from address
-    firstFieldBytes[20] = valueBytes[0]; // 21st byte from value
-
-    const secondFieldBytes = new Uint8Array(32);
-    secondFieldBytes.set(valueBytes.slice(1, 32), 0); // remaining 31 bytes from value
-
-    const firstField = Field.fromBytes(Array.from(firstFieldBytes));
-    const secondField = Field.fromBytes(Array.from(secondFieldBytes));
-
-    return Poseidon.hash([firstField, secondField]);
-}
-
-// Build leaf hashes from pairs of (Address, FixedBytes32)
-function buildLeaves(pairs: Array<[Bytes20, Bytes32]>): Field[] {
-    return pairs.map(([addr, val]) => hashStorageSlot(addr, val));
-}
+import { Bytes20, Bytes32 } from '../types.js';
+import { buildLeavesNonProvable, dummyAddress, dummyValue, nonProvableStorageSlotLeafHash } from './testUtils.js';
 
 // Full Merkle lifecycle test using actual hashed leaves and leaf index
 function fullMerkleTest(
     pairs: Array<[Bytes20, Bytes32]>,
     leafIndex: number
 ): void {
-    const leaves = buildLeaves(pairs);
+    const leaves = buildLeavesNonProvable(pairs);
     const { depth, paddedSize } = computeMerkleTreeDepthAndSize(leaves.length);
     const zeros = getMerkleZeros(depth);
 
@@ -83,7 +51,7 @@ describe('Merkle Fixed Tests', () => {
     test('test_hash_storage_slot_basic', () => {
         const address = dummyAddress(1);
         const value = dummyValue(2);
-        const leafHash = hashStorageSlot(address, value);
+        const leafHash = nonProvableStorageSlotLeafHash(address, value);
         expect(leafHash.equals(Field(0)).toBoolean()).toBe(false);
     });
 
@@ -108,7 +76,7 @@ describe('Merkle Fixed Tests', () => {
                 pairs.push([dummyAddress(i), dummyValue(i)]);
             }
 
-            const leaves = buildLeaves(pairs);
+            const leaves = buildLeavesNonProvable(pairs);
             console.log(
                 `   leaves ${leaves.map((l) =>
                     l.toJSON().split('\n').join(' ,')
@@ -192,7 +160,7 @@ describe('Merkle Fixed Tests', () => {
         console.timeEnd('02. Generate dummy pairs');
 
         console.time('03. buildLeaves');
-        const leaves = buildLeaves(pairs);
+        const leaves = buildLeavesNonProvable(pairs);
         console.timeEnd('03. buildLeaves');
 
         console.time('04. compute depth and padded size');
