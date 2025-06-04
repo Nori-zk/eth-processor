@@ -110,6 +110,7 @@ function extractHighAndLowerBytes(bytes32: Bytes32): {
 }
 
 // Extract 31 bytes from a Field using bit manipulation (little-endian)
+// Probably better with a witness.
 export function extractBytesFromField(packed: Field): UInt8[] {
   const bits = packed.toBits();
   const bytes: UInt8[] = [];

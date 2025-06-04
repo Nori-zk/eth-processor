@@ -96,26 +96,6 @@ export function decodeConsensusMptProof(ethSP1Proof: PlonkProof) {
         proofTotalLength
     );
 
-    console.log('inputSlotSlice bytes:', Array.from(inputSlotSlice));
-    console.log('inputStoreHashSlice bytes:', Array.from(inputStoreHashSlice));
-    console.log('outputSlotSlice bytes:', Array.from(outputSlotSlice));
-    console.log(
-        'outputStoreHashSlice bytes:',
-        Array.from(outputStoreHashSlice)
-    );
-    console.log(
-        'executionStateRootSlice bytes:',
-        Array.from(executionStateRootSlice)
-    );
-    console.log(
-        'verifiedContractStorageSlotsRootSlice bytes:',
-        Array.from(verifiedContractStorageSlotsRootSlice)
-    );
-    console.log(
-        'nextSyncCommitteeHashSlice bytes:',
-        Array.from(nextSyncCommitteeHashSlice)
-    );
-
     const provables = {
         inputSlot: UInt64.from(inputSlot),
         inputStoreHash: Bytes32.from(inputStoreHashSlice),

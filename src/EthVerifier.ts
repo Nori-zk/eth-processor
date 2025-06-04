@@ -13,21 +13,11 @@ import {
     FrC,
     NodeProofLeft,
     parsePlonkPublicInputsProvable,
-    wordToBytes,
 } from '@nori-zk/proof-conversion';
 import { bridgeHeadNoriSP1HeliosProgramPi0 } from './integrity/BridgeHead.NoriSP1HeliosProgram.pi0.js';
 import { proofConversionSP1ToPlonkPO2 } from './integrity/ProofConversion.sp1ToPlonk.po2.js';
 import { proofConversionSP1ToPlonkVkData } from './integrity/ProofConversion.sp1ToPlonk.vkData.js';
-import { Bytes32, Bytes32FieldPair } from './types.js';
-
-export function UInt64ToBigEndianBytes(u64: UInt64): UInt8[] {
-    // Extract the single Field from UInt64
-    const field = u64.toFields()[0];
-    // Get little-endian bytes provably
-    let leBytes = wordToBytes(field, 8);
-    // Reverse to get big-endian
-    return leBytes.slice().reverse();
-}
+import { Bytes32 } from './types.js';
 
 class EthInput extends Struct({
     inputSlot: UInt64,
@@ -47,37 +37,6 @@ const EthVerifier = ZkProgram({
         compute: {
             privateInputs: [NodeProofLeft],
             async method(input: EthInput, proof: NodeProofLeft) {
-                Provable.asProver(() => {
-                    console.log(
-                        'input.inputSlotSlice bytes:',
-                        UInt64ToBigEndianBytes(input.inputSlot).map((value)=>value.toNumber())
-                    );
-                    console.log(
-                        'input.inputStoreHashSlice bytes:',
-                        input.inputStoreHash.bytes.map((value)=>value.toNumber())
-                    );
-                    console.log(
-                        'input.outputSlotSlice bytes:',
-                        UInt64ToBigEndianBytes(input.outputSlot).map((value)=>value.toNumber())
-                    );
-                    console.log(
-                        'input.outputStoreHashSlice bytes:',
-                        input.outputStoreHash.bytes.map((value)=>value.toNumber())
-                    );
-                    console.log(
-                        'input.executionStateRootSlice bytes:',
-                        input.executionStateRoot.bytes.map((value)=>value.toNumber())
-                    );
-                    console.log(
-                        'input.verifiedContractStorageSlotsRootSlice bytes:',
-                        input.verifiedContractDepositsRoot.bytes.map((value)=>value.toNumber())
-                    );
-                    console.log(
-                        'input.nextSyncCommitteeHashSlice bytes:',
-                        input.nextSyncCommitteeHash.bytes.map((value)=>value.toNumber())
-                    );
-                });
-
                 // JK to swap in CI after contract gets updated and redeployed
 
                 // This is an sp1Proof.proof.Plonk.public_inputs[0]
@@ -104,15 +63,10 @@ const EthVerifier = ZkProgram({
                 Provable.log('newHead slot', input.outputSlot);
 
                 // Verification of the input
-                // wordToBytes(input.inputSlot.toFields()[0]).reverse() ?
                 let bytes: UInt8[] = [];
-                //bytes = bytes.concat(input.inputSlot.toBytes().slice().reverse());
-                bytes = bytes.concat(UInt64ToBigEndianBytes(input.inputSlot));
+                bytes = bytes.concat(input.inputSlot.toBytesBE());
                 bytes = bytes.concat(input.inputStoreHash.bytes);
-                //bytes = bytes.concat(input.outputSlot.toBytes().slice().reverse());
-
-                bytes = bytes.concat(UInt64ToBigEndianBytes(input.outputSlot));
-
+                bytes = bytes.concat(input.outputSlot.toBytesBE());
                 bytes = bytes.concat(input.outputStoreHash.bytes);
                 bytes = bytes.concat(input.executionStateRoot.bytes);
                 bytes = bytes.concat(input.verifiedContractDepositsRoot.bytes);
