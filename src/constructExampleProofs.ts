@@ -2,10 +2,10 @@ import { CreateProofArgument } from './types.js';
 import { vkData } from './proofs/nodeVk.js';
 import { p0 } from './proofs/p0.js';
 import { sp1PlonkProof } from './proofs/sp1Proof.js';
-import seriesExample1 from './test_examples/4421760/index.js';
-import seriesExample2 from './test_examples/4421952/index.js';
-import seriesExample3 from './test_examples/4421984/index.js';
-import seriesExample4 from './test_examples/4422016/index.js';
+import seriesExample1 from './test_examples/4428736/index.js';
+import seriesExample2 from './test_examples/4428800/index.js';
+import seriesExample3 from './test_examples/4428832/index.js';
+import seriesExample4 from './test_examples/4428896/index.js';
 
 export function buildExampleProofCreateArgument() {
     const example: CreateProofArgument = {

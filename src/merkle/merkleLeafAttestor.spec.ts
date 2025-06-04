@@ -1,4 +1,4 @@
-import { Bytes, Field, Poseidon, Struct, UInt64, UInt8 } from 'o1js';
+import { UInt64 } from 'o1js';
 import { merkleLeafAttestorGenerator } from './merkleLeafAttestor.js';
 import { Bytes20, Bytes32 } from '../types.js';
 import { Logger, LogPrinter } from '@nori-zk/proof-conversion';
