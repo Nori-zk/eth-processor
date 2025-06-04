@@ -1,4 +1,4 @@
-import { CreateProofArgument } from './types';
+import { CreateProofArgument } from './types.js';
 import { vkData } from './proofs/nodeVk.js';
 import { p0 } from './proofs/p0.js';
 import { sp1PlonkProof } from './proofs/sp1Proof.js';

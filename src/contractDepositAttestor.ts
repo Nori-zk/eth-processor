@@ -1,6 +1,6 @@
-import { Bytes, Field, Poseidon, Struct, UInt8 } from "o1js";
-import { Bytes20, Bytes32 } from "./types";
-import { merkleLeafAttestorGenerator } from "./merkle/merkleLeafAttestor.js";
+import { Bytes, Field, Poseidon, Struct, UInt8 } from 'o1js';
+import { Bytes20, Bytes32 } from './types.js';
+import { merkleLeafAttestorGenerator } from './merkle/merkleLeafAttestor.js';
 
 export class ContractDeposit extends Struct({
     address: Bytes20.provable,
@@ -50,8 +50,8 @@ export function provableStorageSlotLeafHash(contractDeposit: ContractDeposit) {
 }
 
 const {
-    MerkleTreeLeafAttestorInput : ContractDepositAttestorInput,
-    MerkleTreeLeafAttestor : ContractDepositAttestor,
+    MerkleTreeLeafAttestorInput: ContractDepositAttestorInput,
+    MerkleTreeLeafAttestor: ContractDepositAttestor,
     buildLeaves: buildContractDepositLeaves,
     getMerklePathFromLeaves: getContractDepositWitness,
 } = merkleLeafAttestorGenerator(
@@ -61,4 +61,9 @@ const {
     provableStorageSlotLeafHash
 );
 
-export { ContractDepositAttestorInput, ContractDepositAttestor, buildContractDepositLeaves, getContractDepositWitness };
+export {
+    ContractDepositAttestorInput,
+    ContractDepositAttestor,
+    buildContractDepositLeaves,
+    getContractDepositWitness,
+};

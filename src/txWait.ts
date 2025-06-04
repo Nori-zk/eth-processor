@@ -22,7 +22,9 @@ export async function wait(
                 minaRPCNetworkUrl
             );
             logger.verbose(
-                `Received transaction status '${status}' for attempt '${attempt + 1}'.`
+                `Received transaction status '${status}' for attempt '${
+                    attempt + 1
+                }'.`
             );
             if (status === 'INCLUDED') {
                 return true;
@@ -37,9 +39,7 @@ export async function wait(
         if (attempt < maxAttempts) await sleep(intervalMs);
     } while (attempt < maxAttempts);
 
-    logger.warn(
-        `Max attempts exceeded while waiting for a tx. Aborting.`
-    );
+    logger.warn(`Max attempts exceeded while waiting for a tx. Aborting.`);
 
     throw new Error(
         `Max attempts exceeded while waiting for tx with id:\n${txId}`

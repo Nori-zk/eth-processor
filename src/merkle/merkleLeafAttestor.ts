@@ -1,4 +1,12 @@
-import { Field, Poseidon, Provable, Struct, UInt64, ZkProgram, DynamicArray } from 'o1js';
+import {
+    Field,
+    Poseidon,
+    Provable,
+    Struct,
+    UInt64,
+    ZkProgram,
+    DynamicArray,
+} from 'o1js';
 import {
     computeMerkleTreeDepthAndSize,
     getMerklePathFromLeaves as getMerklePathFromLeavesInner,
@@ -44,7 +52,6 @@ export function merkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
                     const bitPath = index.value.toBits(path.capacity);
                     let i = 0;
                     path.forEach((sibling, isDummy) => {
-                        
                         const bit = bitPath[i];
 
                         /*Provable.asProver(() => {
@@ -97,11 +104,7 @@ export function merkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
     });
 
     function buildLeaves(leafContents: TLeaf[]): Field[] {
-        return leafContents.map((leaf) =>
-            leafContentsHasher(
-                leaf
-            )
-        );
+        return leafContents.map((leaf) => leafContentsHasher(leaf));
     }
 
     function getMerklePathFromLeaves(merkleLeaves: Field[], index: number) {

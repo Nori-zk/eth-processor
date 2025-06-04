@@ -19,14 +19,16 @@ new LogPrinter('[TestEthProcessor]', [
 ]);
 
 // Fix testing network to lightnet
-process.env.NETWORK='lightnet';
+process.env.NETWORK = 'lightnet';
 
 const logger = new Logger('JestEthProcessor');
 
 describe('MinaEthProcessorSubmittor Integration Test', () => {
     test('should run the proof submission process correctly', async () => {
         // Generate a random contract key
-        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(PrivateKey.random());
+        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(
+            PrivateKey.random()
+        );
 
         // Construct a MinaEthProcessorSubmittor
         const proofSubmitter = new MinaEthProcessorSubmitter();
@@ -59,7 +61,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
     test('should perform a series of proof submissions', async () => {
         // Generate a random contract key
-        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(PrivateKey.random());
+        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(
+            PrivateKey.random()
+        );
 
         // Construct a MinaEthProcessorSubmittor
         const proofSubmitter = new MinaEthProcessorSubmitter();
@@ -74,7 +78,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         const seriesExamples = buildExampleProofSeriesCreateArguments();
 
         // Deploy contract
-        const decoded = decodeConsensusMptProof(seriesExamples[0].sp1PlonkProof);
+        const decoded = decodeConsensusMptProof(
+            seriesExamples[0].sp1PlonkProof
+        );
         await proofSubmitter.deployContract(decoded.inputStoreHash);
 
         // Build and submit proofs
@@ -98,7 +104,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
 
     test('should invoke a hash validation issue when we skip transition proofs', async () => {
         // Generate a random contract key
-        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(PrivateKey.random());
+        process.env.ZKAPP_PRIVATE_KEY = PrivateKey.toBase58(
+            PrivateKey.random()
+        );
 
         // Construct a MinaEthProcessorSubmittor
         const proofSubmitter = new MinaEthProcessorSubmitter();
@@ -113,7 +121,9 @@ describe('MinaEthProcessorSubmittor Integration Test', () => {
         const seriesExamples = buildExampleProofSeriesCreateArguments();
 
         // Deploy contract
-        const decoded = decodeConsensusMptProof(seriesExamples[0].sp1PlonkProof);
+        const decoded = decodeConsensusMptProof(
+            seriesExamples[0].sp1PlonkProof
+        );
         await proofSubmitter.deployContract(decoded.inputStoreHash);
 
         // Build and submit proofs

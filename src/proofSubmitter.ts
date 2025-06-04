@@ -1,10 +1,4 @@
-import {
-    AccountUpdate,
-    Mina,
-    PrivateKey,
-    NetworkId,
-    fetchAccount,
-} from 'o1js';
+import { AccountUpdate, Mina, PrivateKey, NetworkId, fetchAccount } from 'o1js';
 import { Logger, NodeProofLeft } from '@nori-zk/proof-conversion';
 import { EthProcessor, EthProofType } from './EthProcessor.js';
 import { EthVerifier, EthInput } from './EthVerifier.js';
@@ -77,7 +71,8 @@ export class MinaEthProcessorSubmitter {
     }
 
     async compileContracts() {
-        const {ethVerifierVerificationKey, ethProcessorVerificationKey} = await compileAndVerifyContracts(logger);
+        const { ethVerifierVerificationKey, ethProcessorVerificationKey } =
+            await compileAndVerifyContracts(logger);
         this.ethVerifierVerificationKey = ethVerifierVerificationKey;
         this.ethProcessorVerificationKey = ethProcessorVerificationKey;
     }
@@ -90,7 +85,10 @@ export class MinaEthProcessorSubmitter {
                 AccountUpdate.fundNewAccount(
                     this.senderPrivateKey.toPublicKey()
                 );
-                await this.zkApp.deploy({verificationKey: this.ethProcessorVerificationKey, storeHash: Bytes32FieldPair.fromBytes32(storeHash)});
+                await this.zkApp.deploy({
+                    verificationKey: this.ethProcessorVerificationKey,
+                    storeHash: Bytes32FieldPair.fromBytes32(storeHash),
+                });
             }
         );
         logger.log('Deploy transaction created successfully. Proving...');
@@ -118,7 +116,9 @@ export class MinaEthProcessorSubmitter {
 
             const ethSP1Proof = sp1PlonkProof;
 
-            logger.log('Decoding converted proof and creating verification inputs.');
+            logger.log(
+                'Decoding converted proof and creating verification inputs.'
+            );
 
             // Decode proof values and create input for verification.
             const input = new EthInput(decodeConsensusMptProof(ethSP1Proof));
@@ -157,9 +157,7 @@ export class MinaEthProcessorSubmitter {
             logger.log('Transaction proven.');
 
             const tx = await updateTx.sign([this.senderPrivateKey]).send();
-            logger.log(
-                `Transaction sent to '${this.network}'.`
-            );
+            logger.log(`Transaction sent to '${this.network}'.`);
             const txId = tx.data!.sendZkapp.zkapp.id;
             const txHash = tx.data!.sendZkapp.zkapp.hash;
             if (!txId) {

@@ -9,7 +9,12 @@ import {
     getMerklePathFromLeaves,
 } from './merkleTree.js';
 import { Bytes20, Bytes32 } from '../types.js';
-import { buildLeavesNonProvable, dummyAddress, dummyValue, nonProvableStorageSlotLeafHash } from './testUtils.js';
+import {
+    buildLeavesNonProvable,
+    dummyAddress,
+    dummyValue,
+    nonProvableStorageSlotLeafHash,
+} from './testUtils.js';
 
 // Full Merkle lifecycle test using actual hashed leaves and leaf index
 function fullMerkleTest(

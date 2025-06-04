@@ -1,5 +1,5 @@
-import { Bytes, Field, Poseidon, Struct, UInt8 } from "o1js";
-import { Bytes20, Bytes32 } from "../types.js";
+import { Bytes, Field, Poseidon, Struct, UInt8 } from 'o1js';
+import { Bytes20, Bytes32 } from '../types.js';
 
 export function dummyAddress(byte: number): Bytes20 {
     const arr = new Uint8Array(20).fill(byte);
@@ -11,7 +11,10 @@ export function dummyValue(byte: number): Bytes32 {
     return Bytes32.from(arr);
 }
 
-export function nonProvableStorageSlotLeafHash(addr: Bytes20, value: Bytes32): Field {
+export function nonProvableStorageSlotLeafHash(
+    addr: Bytes20,
+    value: Bytes32
+): Field {
     const addrBytes = addr.toBytes();
     const valueBytes = value.toBytes();
 
@@ -29,8 +32,12 @@ export function nonProvableStorageSlotLeafHash(addr: Bytes20, value: Bytes32): F
 }
 
 // Build leaf hashes from pairs of (Address, FixedBytes32)
-export function buildLeavesNonProvable(pairs: Array<[Bytes20, Bytes32]>): Field[] {
-    return pairs.map(([addr, val]) => nonProvableStorageSlotLeafHash(addr, val));
+export function buildLeavesNonProvable(
+    pairs: Array<[Bytes20, Bytes32]>
+): Field[] {
+    return pairs.map(([addr, val]) =>
+        nonProvableStorageSlotLeafHash(addr, val)
+    );
 }
 
 export class ProvableLeafObject extends Struct({

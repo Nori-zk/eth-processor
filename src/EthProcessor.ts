@@ -163,7 +163,9 @@ export class EthProcessor extends SmartContract {
         // Verification that next sync commitee is non zero (could brick the bridge head otherwise)
         let nextSyncCommitteeZeroAcc = new Field(0);
         for (let i = 0; i < 32; i++) {
-            nextSyncCommitteeZeroAcc = nextSyncCommitteeZeroAcc.add(ethProof.publicInput.nextSyncCommitteeHash.bytes[i].value);
+            nextSyncCommitteeZeroAcc = nextSyncCommitteeZeroAcc.add(
+                ethProof.publicInput.nextSyncCommitteeHash.bytes[i].value
+            );
         }
         nextSyncCommitteeZeroAcc.assertNotEquals(new Field(0));
 
@@ -171,16 +173,16 @@ export class EthProcessor extends SmartContract {
         ethProof.verify();
 
         // Pack the verifiedContractDepositsRoot into a pair of fields
-        const verifiedContractDepositsRoot = Bytes32FieldPair.fromBytes32(ethProof.publicInput.verifiedContractDepositsRoot);
-        
+        const verifiedContractDepositsRoot = Bytes32FieldPair.fromBytes32(
+            ethProof.publicInput.verifiedContractDepositsRoot
+        );
+
         // Update contract values
         this.latestHead.set(proofHead);
         this.verifiedStateRoot.set(
             Poseidon.hashPacked(Bytes32.provable, executionStateRoot)
         );
-        this.latestHeliusStoreInputHashHighByte.set(
-            newStoreHash.highByteField
-        );
+        this.latestHeliusStoreInputHashHighByte.set(newStoreHash.highByteField);
         this.latestHeliusStoreInputHashLowerBytes.set(
             newStoreHash.lowerBytesField
         );

@@ -24,17 +24,17 @@ export function computeMerkleTreeDepthAndSize(nLeaves: number): {
  * Generate zero hashes array of length depth + 1
  */
 export function getMerkleZeros(depth: number): Field[] {
-  const zeros: Field[] = [];
+    const zeros: Field[] = [];
 
-  // Start with zeros[0] = Field(0)
-  zeros.push(Field(0));
+    // Start with zeros[0] = Field(0)
+    zeros.push(Field(0));
 
-  for (let i = 1; i < depth + 1; i++) {
-    // Each next zero is hash of the previous zero with itself
-    zeros.push(Poseidon.hash([zeros[i - 1], zeros[i - 1]]));
-  }
+    for (let i = 1; i < depth + 1; i++) {
+        // Each next zero is hash of the previous zero with itself
+        zeros.push(Poseidon.hash([zeros[i - 1], zeros[i - 1]]));
+    }
 
-  return zeros;
+    return zeros;
 }
 
 /**
@@ -157,7 +157,7 @@ export function foldMerkleLeft(
 }
 
 /**
- * Compute the Merkle path (sibling nodes) for a given leaf index from 
+ * Compute the Merkle path (sibling nodes) for a given leaf index from
  * a list of leaves.
  *
  * This function mutates and extends the provided `merkleLeaves` array
