@@ -5,8 +5,8 @@ import {
     Struct,
     UInt64,
     ZkProgram,
-    DynamicArray,
 } from 'o1js';
+import { DynamicArray } from 'mina-attestations';
 import {
     computeMerkleTreeDepthAndSize,
     getMerklePathFromLeaves as getMerklePathFromLeavesInner,
@@ -20,7 +20,7 @@ export function merkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
     provableLeafType: Constructor<TLeaf>,
     leafContentsHasher: (leaf: TLeaf) => Field
 ) {
-    const MerklePath = DynamicArray(Field, { capacity: treeDepth });
+    const MerklePath = DynamicArray(Field, { maxLength: treeDepth });
 
     class MerkleTreeLeafAttestorInput extends Struct({
         rootHash: Field,
@@ -49,9 +49,8 @@ export function merkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
                         Provable.log(`Generated hash of value ${currentHash}`);
                     });*/
 
-                    const bitPath = index.value.toBits(path.capacity);
-                    let i = 0;
-                    path.forEach((sibling, isDummy) => {
+                    const bitPath = index.value.toBits(path.maxLength);
+                    path.forEach((sibling, isDummy, i) => {
                         const bit = bitPath[i];
 
                         /*Provable.asProver(() => {
@@ -88,7 +87,6 @@ export function merkleLeafAttestorGenerator<TLeaf>( // extends Struct<any>
                             currentHash,
                             nextHash
                         );
-                        i++;
                     });
 
                     /*Provable.asProver(() => {
