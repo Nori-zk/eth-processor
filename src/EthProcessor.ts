@@ -50,10 +50,11 @@ export class EthProcessor extends SmartContract {
 
         this.account.permissions.set({
             ...Permissions.default(),
+            editState: Permissions.proofOrSignature(),
         });
     }
 
-    @method async deploy(args: EthProcessorDeployArgs) {
+    async deploy(args: EthProcessorDeployArgs) {
         const { verificationKey } = args;
         super.deploy({ verificationKey });
 
