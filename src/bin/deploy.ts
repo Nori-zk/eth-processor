@@ -7,7 +7,7 @@ import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { rootDir, compileAndVerifyContracts } from '../utils.js';
 import { EthProcessor } from '../EthProcessor.js';
-import { Bytes32, Bytes32FieldPair } from '../types.js';
+import { Bytes32, Bytes32FieldPair, EthProcessorDeployArgs } from '../types.js';
 
 const logger = new Logger('Deploy');
 
@@ -95,7 +95,7 @@ async function deploy() {
 
     // Configure Mina network
     const Network = Mina.Network({
-        networkId: 'testnet' as NetworkId,
+        networkId: 'testnet' as NetworkId, // FIXME this need to be able to support mainnet.
         mina: networkUrl,
     });
     Mina.setActiveInstance(Network);
@@ -113,21 +113,27 @@ async function deploy() {
     const txn = await Mina.transaction(
         { fee, sender: deployerAccount },
         async () => {
-            AccountUpdate.fundNewAccount(deployerAccount);
+            // Fund new contract deployments.
+            if (zkAppPrivateKeyWasCreated === true)
+                AccountUpdate.fundNewAccount(deployerAccount);
+            // Conditionally deploy with or without a replacement storeHash
+            let args: EthProcessorDeployArgs;
             if (storeHash) {
                 logger.log(
                     'Deploying with an updated storeHash and verification key.'
                 );
-                await zkApp.deploy({
+                args = new EthProcessorDeployArgs({
                     verificationKey: ethProcessorVerificationKey,
                     storeHash: Bytes32FieldPair.fromBytes32(storeHash),
                 });
             } else {
                 logger.log('Deploying with an updated verification key.');
-                await zkApp.deploy({
+                args = new EthProcessorDeployArgs({
                     verificationKey: ethProcessorVerificationKey,
+                    storeHash: Bytes32FieldPair.undefined(),
                 });
             }
+            await zkApp.deploy(args);
         }
     );
 

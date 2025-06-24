@@ -1,4 +1,4 @@
-import { Bytes, Field, Provable, Struct, UInt64, UInt8 } from 'o1js';
+import { Bool, Bytes, Field, Provable, Struct, UInt64, UInt8 } from 'o1js';
 import { EthVerifier } from './EthVerifier';
 
 export type Constructor<T = any> = new (...args: any) => T;
@@ -50,11 +50,6 @@ export type EthVerifierComputeOutput = Awaited<
     ReturnType<typeof EthVerifier.compute>
 >;
 
-export type VerificationKey = {
-    data: string;
-    hash: Field;
-};
-
 export class Bytes32 extends Bytes(32) {
     static get zero() {
         return new this(new Array(32).map(() => new UInt8(0)));
@@ -91,7 +86,58 @@ export class Bytes32FieldPair extends Struct({
             lowerBytesField: storeHashLowerBytesField,
         });
     }
+
+    static undefined() {
+        let storeHashHighByteField = new Field(0);
+        let storeHashLowerBytesField = new Field(0);
+
+        return new this({
+            highByteField: storeHashHighByteField,
+            lowerBytesField: storeHashLowerBytesField,
+        });
+    }
+
+    isUndefined() {
+        return Provable.if(
+            this.lowerBytesField.greaterThan(new Field(0)),
+            Bool,
+            new Bool(false),
+            Provable.if(
+                this.highByteField.greaterThan(new Field(0)),
+                Bool,
+                new Bool(false),
+                new Bool(true)
+            )
+        );
+    }
 }
+
+/*export type VerificationKeyType = {
+    data: string;
+    hash: Field;
+};*/
+
+// @Karol
+// This is just a struct wrapper of VerificationKeyType type above which is the same type we get from (await EthVerifier.compile()).verificationKey
+/* 
+  Kinda curious here because String isn't an o1js type.
+  But is what is accepted from super.deploy we call in our ZKApp.deploy method definition which we have now decorated in a @method decorator
+  (method) SmartContract.deploy({ verificationKey, }?: {
+      verificationKey?: {
+          data: string;
+          hash: Field | string;
+      };
+  }): Promise<void>
+*/
+export class VerificationKey extends Struct({
+    data: String,
+    hash: Field,
+}) {}
+
+export class EthProcessorDeployArgs extends Struct({
+    verificationKey: VerificationKey,
+    storeHash: Bytes32FieldPair,
+}) {}
 
 // Next version could do something like this:
 // (we could then fit two state into the contract a->b to allow the client minting more time)

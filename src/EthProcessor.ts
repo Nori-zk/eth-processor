@@ -12,10 +12,11 @@ import {
     Permissions,
     Provable,
     Struct,
+    Bool,
 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
 import { EthProof } from './EthVerifier.js';
-import { Bytes32, Bytes32FieldPair } from './types.js';
+import { Bytes32, Bytes32FieldPair, EthProcessorDeployArgs } from './types.js';
 
 const logger = new Logger('EthProcessor');
 
@@ -29,24 +30,6 @@ export const adminPrivateKey = PrivateKey.fromBase58(adminPrivateKeyBase58);
 export const adminPublicKey = adminPrivateKey.toPublicKey();
 
 export class EthProofType extends EthProof {}
-
-class VerificationKey extends Struct({
-    data: String,
-    hash: Field,
-}) {}
-
-class DeployArgsWithStoreHash extends Struct({
-    verificationKey: VerificationKey,
-    storeHash: Bytes32FieldPair,
-}) {}
-
-class DeployArgsWithoutStoreHash extends Struct({
-    verificationKey: VerificationKey,
-}) {}
-
-export type EthProcessorDeployArgs =
-    | DeployArgsWithStoreHash
-    | DeployArgsWithoutStoreHash;
 
 export class EthProcessor extends SmartContract {
     @state(PublicKey) admin = State<PublicKey>();
@@ -70,19 +53,43 @@ export class EthProcessor extends SmartContract {
         });
     }
 
-    async deploy(args: EthProcessorDeployArgs) {
-        // Could we deploy with a proof?
-
+    @method async deploy(args: EthProcessorDeployArgs) {
         const { verificationKey } = args;
         super.deploy({ verificationKey });
-        if ('storeHash' in args) {
-            this.latestHeliusStoreInputHashHighByte.set(
-                args.storeHash.highByteField
-            );
-            this.latestHeliusStoreInputHashLowerBytes.set(
-                args.storeHash.lowerBytesField
-            );
-        }
+
+        // Determine whether or not a storeHash was provided to replace the existing on.
+        const replaceStoreHash = args.storeHash.isUndefined().not();
+
+        // Retreive the contracts existing storeHash high and lower bytes fields.
+        const lastHeliusStoreInputHashHighByte =
+            this.latestVerifiedContractDepositsRootHighByte.getAndRequireEquals();
+        const lastVerifiedContractDepositsRootLowerBytes =
+            this.latestVerifiedContractDepositsRootLowerBytes.getAndRequireEquals();
+
+        // Conditionally extract the contracts existing storeHash high and lower bytes fields or selection of the new
+        // replacement storeHash high and lower bytes based on existing of a new storeHash in the deployment args.
+        const latestHeliusStoreInputHashHighByte = Provable.if(
+            replaceStoreHash,
+            Field,
+            args.storeHash.highByteField,
+            lastHeliusStoreInputHashHighByte
+        );
+
+        const latestHeliusStoreInputHashLowerBytes = Provable.if(
+            replaceStoreHash,
+            Field,
+            args.storeHash.lowerBytesField,
+            lastVerifiedContractDepositsRootLowerBytes
+        );
+
+        // Set the selected storeHash high or lower bytes fields
+        this.latestHeliusStoreInputHashHighByte.set(
+            latestHeliusStoreInputHashHighByte
+        );
+
+        this.latestHeliusStoreInputHashLowerBytes.set(
+            latestHeliusStoreInputHashLowerBytes
+        );
 
         //this.verifiedStateRoot.set(Field(2)); // Need to prove this otherwise its bootstrapped in an invalid state
     }
