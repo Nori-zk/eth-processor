@@ -87,7 +87,6 @@ export class MinaEthProcessorSubmitter {
                 );
                 await this.zkApp.deploy({
                     verificationKey: this.ethProcessorVerificationKey,
-                    storeHash: Bytes32FieldPair.fromBytes32(storeHash),
                 });
             }
         );

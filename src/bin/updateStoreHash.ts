@@ -1,12 +1,20 @@
 // Load environment variables from .env file
 import 'dotenv/config';
 // Other imports
-import { Mina, PrivateKey, AccountUpdate, NetworkId, fetchAccount } from 'o1js';
+import {
+    Mina,
+    PrivateKey,
+    AccountUpdate,
+    NetworkId,
+    fetchAccount,
+    Bytes,
+} from 'o1js';
 import { Logger, LogPrinter } from '@nori-zk/proof-conversion';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { rootDir, compileAndVerifyContracts } from '../utils.js';
 import { EthProcessor } from '../EthProcessor.js';
+import { Bytes32, Bytes32FieldPair } from '../types.js';
 
 const logger = new Logger('Deploy');
 
@@ -25,18 +33,12 @@ const missingEnvVariables: string[] = [];
 // Declare sender private key
 const deployerKeyBase58 = process.env.SENDER_PRIVATE_KEY as string;
 
-// Get or generate a zkAppPrivateKey
-let zkAppPrivateKeyWasCreated = false;
+// Get zkAppPrivateKey
 if (!process.env.ZKAPP_PRIVATE_KEY) {
-    zkAppPrivateKeyWasCreated = true;
-    logger.log('ZKAPP_PRIVATE_KEY not set, generating a random key.');
+    logger.fatal('ZKAPP_PRIVATE_KEY not set.');
+    process.exit(1);
 }
-let zkAppPrivateKeyBase58 =
-    process.env.ZKAPP_PRIVATE_KEY ?? PrivateKey.random().toBase58();
-if (zkAppPrivateKeyWasCreated) {
-    logger.log(`Created a new ZKAppPrivate key.`);
-    process.env.ZKAPP_PRIVATE_KEY = zkAppPrivateKeyBase58;
-}
+let zkAppPrivateKeyBase58 = process.env.ZKAPP_PRIVATE_KEY as string;
 
 // Validate
 if (!deployerKeyBase58) missingEnvVariables.push('SENDER_PRIVATE_KEY');
@@ -55,28 +57,26 @@ const networkUrl =
     process.env.MINA_RPC_NETWORK_URL || 'http://localhost:3000/graphql'; // Should probably validate here the network type. FIXME
 const fee = Number(process.env.TX_FEE || 0.1) * 1e9; // in nanomina (1 billion = 1.0 mina)
 
-function writeSuccessDetailsToEnvFileFile(zkAppAddressBase58: string) {
-    // Write env file.
-    const env = {
-        ZKAPP_PRIVATE_KEY: zkAppPrivateKeyBase58,
-        ZKAPP_ADDRESS: zkAppAddressBase58,
-    };
-    const envFileStr =
-        Object.entries(env)
-            .map(([key, value]) => `${key}=${value}`)
-            .join('\n') + `\n`;
-    const envFileOutputPath = resolve(
-        rootDir,
-        '..',
-        '..',
-        '.env.nori-eth-processor'
+// Get cli argument
+const storeHashHex = process.argv[2];
+console.log('storeHashHex', storeHashHex);
+
+let storeHash: Bytes;
+try {
+    const possibleStoreHash = storeHashHex
+        ? Bytes32.fromHex(storeHashHex)
+        : undefined;
+    if (possibleStoreHash === undefined)
+        throw new Error('Store hash hex value was not defined. Please provide it as a first argument.');
+    storeHash = possibleStoreHash;
+} catch (err) {
+    logger.fatal(
+        `Store hash was not provided as a first argument or was invalid:\n${(err as Error).stack}`
     );
-    logger.info(`Writing env file with the details: '${envFileOutputPath}'`);
-    writeFileSync(envFileOutputPath, envFileStr, 'utf8');
-    logger.log(`Wrote '${envFileOutputPath}' successfully.`);
+    process.exit(1);
 }
 
-async function deploy() {
+async function updateStoreHash() {
     // Initialize keys
     const deployerKey = PrivateKey.fromBase58(deployerKeyBase58);
     const zkAppPrivateKey = PrivateKey.fromBase58(zkAppPrivateKeyBase58);
@@ -95,9 +95,7 @@ async function deploy() {
     Mina.setActiveInstance(Network);
 
     // Compile and verify
-    const { ethProcessorVerificationKey } = await compileAndVerifyContracts(
-        logger
-    );
+    await compileAndVerifyContracts(logger);
 
     // Initialize contract
     const zkApp = new EthProcessor(zkAppAddress);
@@ -107,12 +105,10 @@ async function deploy() {
     const txn = await Mina.transaction(
         { fee, sender: deployerAccount },
         async () => {
-            if (zkAppPrivateKeyWasCreated)
-                AccountUpdate.fundNewAccount(deployerAccount);
-            logger.log('Deploying with an updated verification key.');
-            await zkApp.deploy({
-                verificationKey: ethProcessorVerificationKey,
-            });
+            logger.log(`Updating the store hash to '${storeHashHex}'.`);
+            await zkApp.updateStoreHash(
+                Bytes32FieldPair.fromBytes32(storeHash)
+            );
         }
     );
 
@@ -126,14 +122,12 @@ async function deploy() {
 
     await fetchAccount({ publicKey: zkAppAddress });
     const currentAdmin = await zkApp.admin.fetch();
-    logger.log('Deployment successful!');
+    logger.log('Update successful!');
     logger.log(`Contract admin: '${currentAdmin?.toBase58()}'.`);
-
-    writeSuccessDetailsToEnvFileFile(zkAppAddressBase58);
 }
 
-// Execute deployment
-deploy().catch((err) => {
+// Execute update
+updateStoreHash().catch((err) => {
     logger.fatal(`Deploy function encountered an error.\n${String(err)}`);
     process.exit(1);
 });

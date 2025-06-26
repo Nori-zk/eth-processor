@@ -30,7 +30,7 @@ export const adminPublicKey = adminPrivateKey.toPublicKey();
 
 export class EthProofType extends EthProof {}
 
-class VerificationKey extends Struct({
+/*class VerificationKey extends Struct({
     data: String,
     hash: Field,
 }) {}
@@ -46,7 +46,7 @@ class DeployArgsWithoutStoreHash extends Struct({
 
 export type EthProcessorDeployArgs =
     | DeployArgsWithStoreHash
-    | DeployArgsWithoutStoreHash;
+    | DeployArgsWithoutStoreHash;*/
 
 export class EthProcessor extends SmartContract {
     @state(PublicKey) admin = State<PublicKey>();
@@ -70,7 +70,7 @@ export class EthProcessor extends SmartContract {
         });
     }
 
-    async deploy(args: EthProcessorDeployArgs) {
+    /*async deploy(args: EthProcessorDeployArgs) {
         // Could we deploy with a proof?
 
         const { verificationKey } = args;
@@ -85,7 +85,16 @@ export class EthProcessor extends SmartContract {
         }
 
         //this.verifiedStateRoot.set(Field(2)); // Need to prove this otherwise its bootstrapped in an invalid state
+    }*/
+
+    @method async updateStoreHash(newStoreHash: Bytes32FieldPair) {
+        this.latestHeliusStoreInputHashHighByte.set(newStoreHash.highByteField);
+        this.latestHeliusStoreInputHashLowerBytes.set(
+            newStoreHash.lowerBytesField
+        );
     }
+
+    // define a method for replacing the storeHash here.
 
     // @method async init() {
     //   this.account.provedState.getAndRequireEquals();
