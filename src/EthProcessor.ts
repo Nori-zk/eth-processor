@@ -12,6 +12,7 @@ import {
     Permissions,
     Provable,
     Struct,
+    VerificationKey,
 } from 'o1js';
 import { Logger } from '@nori-zk/proof-conversion';
 import { EthProof } from './EthVerifier.js';
@@ -67,7 +68,13 @@ export class EthProcessor extends SmartContract {
 
         this.account.permissions.set({
             ...Permissions.default(),
+            setVerificationKey:
+                Permissions.VerificationKey.proofDuringCurrentVersion(),
         });
+    }
+
+    @method async setVerificationKey(vk: VerificationKey) {
+        this.account.verificationKey.set(vk);
     }
 
     /*async deploy(args: EthProcessorDeployArgs) {

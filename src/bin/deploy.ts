@@ -107,12 +107,16 @@ async function deploy() {
     const txn = await Mina.transaction(
         { fee, sender: deployerAccount },
         async () => {
-            if (zkAppPrivateKeyWasCreated)
+            if (zkAppPrivateKeyWasCreated) {
                 AccountUpdate.fundNewAccount(deployerAccount);
-            logger.log('Deploying with an updated verification key.');
-            await zkApp.deploy({
-                verificationKey: ethProcessorVerificationKey,
-            });
+                logger.log('Deploying fresh contract.');
+                await zkApp.deploy({
+                    verificationKey: ethProcessorVerificationKey,
+                });
+            } else {
+                logger.log('Deploying with an updated verification key.');
+                await zkApp.setVerificationKey(ethProcessorVerificationKey);
+            }
         }
     );
 
